@@ -1,0 +1,92 @@
+[gd_scene load_steps=12 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material_steel"]
+albedo_color = Color(0.76, 0.79, 0.84, 1)
+metallic = 0.85
+roughness = 0.26
+
+[sub_resource type="StandardMaterial3D" id="Material_ridge"]
+albedo_color = Color(0.95, 0.96, 0.99, 1)
+metallic = 0.9
+roughness = 0.16
+
+[sub_resource type="StandardMaterial3D" id="Material_brass"]
+albedo_color = Color(0.73, 0.58, 0.27, 1)
+metallic = 0.7
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Material_leather"]
+albedo_color = Color(0.24, 0.13, 0.07, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_blade"]
+material = SubResource("Material_steel")
+size = Vector3(0.038, 0.6, 0.013)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fullers"]
+material = SubResource("Material_ridge")
+size = Vector3(0.012, 0.52, 0.016)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tip"]
+material = SubResource("Material_steel")
+top_radius = 0.0
+bottom_radius = 0.027
+height = 0.15
+radial_segments = 4
+
+[sub_resource type="BoxMesh" id="BoxMesh_guard"]
+material = SubResource("Material_brass")
+size = Vector3(0.21, 0.03, 0.035)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_grip"]
+material = SubResource("Material_leather")
+top_radius = 0.024
+bottom_radius = 0.026
+height = 0.14
+radial_segments = 8
+
+[sub_resource type="SphereMesh" id="SphereMesh_pommel"]
+material = SubResource("Material_brass")
+radius = 0.032
+height = 0.064
+radial_segments = 8
+rings = 4
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+material = SubResource("Material_brass")
+inner_radius = 0.028
+outer_radius = 0.045
+rings = 8
+ring_segments = 6
+
+[node name="Sword" type="Node3D"]
+
+[node name="Blade" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.47, 0)
+mesh = SubResource("BoxMesh_blade")
+
+[node name="Fuller" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.47, 0.001)
+mesh = SubResource("BoxMesh_fullers")
+
+[node name="Tip" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.84, 0)
+mesh = SubResource("CylinderMesh_tip")
+scale = Vector3(1, 1, 0.55)
+
+[node name="Guard" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.16, 0)
+mesh = SubResource("BoxMesh_guard")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.075, 0)
+mesh = SubResource("CylinderMesh_grip")
+
+[node name="Pommel" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.005, 0)
+mesh = SubResource("SphereMesh_pommel")
+
+[node name="PommelRing" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.04, 0)
+rotation = Vector3(1.570796, 0, 0)
+mesh = SubResource("TorusMesh_ring")

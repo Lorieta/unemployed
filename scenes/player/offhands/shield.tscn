@@ -1,0 +1,85 @@
+[gd_scene load_steps=10 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material_wood"]
+albedo_color = Color(0.33, 0.22, 0.12, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Material_wood_dark"]
+albedo_color = Color(0.2, 0.13, 0.07, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="Material_brass"]
+albedo_color = Color(0.78, 0.61, 0.28, 1)
+metallic = 0.75
+roughness = 0.34
+
+[sub_resource type="StandardMaterial3D" id="Material_steel"]
+albedo_color = Color(0.58, 0.61, 0.64, 1)
+metallic = 0.85
+roughness = 0.28
+
+[sub_resource type="StandardMaterial3D" id="Material_rune"]
+albedo_color = Color(0.52, 0.95, 0.66, 1)
+emission_enabled = true
+emission = Color(0.3, 0.95, 0.55, 1)
+emission_energy_multiplier = 1.8
+roughness = 0.25
+
+[sub_resource type="BoxMesh" id="BoxMesh_board"]
+material = SubResource("Material_wood")
+size = Vector3(0.36, 0.5, 0.045)
+
+[sub_resource type="BoxMesh" id="BoxMesh_band"]
+material = SubResource("Material_brass")
+size = Vector3(0.39, 0.035, 0.055)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rib"]
+material = SubResource("Material_brass")
+size = Vector3(0.035, 0.5, 0.055)
+
+[sub_resource type="SphereMesh" id="SphereMesh_boss"]
+material = SubResource("Material_steel")
+radius = 0.085
+height = 0.17
+radial_segments = 10
+rings = 5
+
+[sub_resource type="BoxMesh" id="BoxMesh_rune"]
+material = SubResource("Material_rune")
+size = Vector3(0.06, 0.15, 0.012)
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+material = SubResource("Material_wood_dark")
+size = Vector3(0.055, 0.16, 0.04)
+
+[node name="WardenShield" type="Node3D"]
+
+[node name="Board" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.16, 0)
+mesh = SubResource("BoxMesh_board")
+
+[node name="BandTop" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.39, 0)
+mesh = SubResource("BoxMesh_band")
+
+[node name="BandBottom" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.06, 0)
+mesh = SubResource("BoxMesh_band")
+
+[node name="Rib" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.16, -0.004)
+mesh = SubResource("BoxMesh_rib")
+
+[node name="Boss" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.2, -0.055)
+scale = Vector3(1, 1, 0.62)
+mesh = SubResource("SphereMesh_boss")
+
+[node name="Rune" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.2, -0.085)
+rotation = Vector3(0, 0, 0.785398)
+mesh = SubResource("BoxMesh_rune")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.16, 0.04)
+mesh = SubResource("BoxMesh_grip")

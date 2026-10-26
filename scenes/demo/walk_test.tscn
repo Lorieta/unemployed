@@ -1,0 +1,146 @@
+[gd_scene format=3 uid="uid://bck1gmyo20yuf"]
+
+[ext_resource type="PackedScene" path="res://scenes/player/tiny_human.tscn" id="1_human"]
+[ext_resource type="PackedScene" path="res://scenes/demo/low_poly_tree.tscn" id="2_tree"]
+[ext_resource type="Script" uid="uid://ndmieiahh5hy" path="res://scenes/demo/follow_camera.gd" id="3_camera"]
+[ext_resource type="Shader" uid="uid://ctw68nkacdmir" path="res://scenes/demo/ground_grid.gdshader" id="4_ground_shader"]
+[ext_resource type="PackedScene" path="res://scenes/hud/hud.tscn" id="5_hud"]
+[ext_resource type="PackedScene" path="res://scenes/demo/training_dummy.tscn" id="6_dummy"]
+[ext_resource type="PackedScene" path="res://scenes/demo/wayfarer_npc.tscn" id="7_wayfarer"]
+[ext_resource type="PackedScene" path="res://scenes/demo/old_well.tscn" id="8_well"]
+
+[sub_resource type="Environment" id="Environment_demo"]
+background_mode = 1
+background_color = Color(0.529412, 0.760784, 0.913725, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.721569, 0.780392, 0.839216, 1)
+ambient_light_energy = 0.7
+tonemap_mode = 2
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ground"]
+render_priority = 0
+shader = ExtResource("4_ground_shader")
+shader_parameter/base_color = Color(0.309804, 0.380392, 0.341176, 1)
+shader_parameter/tile_color = Color(0.34902, 0.431373, 0.380392, 1)
+shader_parameter/line_color = Color(0.45098, 0.529412, 0.470588, 1)
+shader_parameter/cell_size = 2.0
+shader_parameter/pattern_fade_start = 20.0
+shader_parameter/pattern_fade_end = 60.0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+material = SubResource("ShaderMaterial_ground")
+size = Vector2(160, 160)
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_ground"]
+
+[sub_resource type="StandardMaterial3D" id="Material_rock"]
+albedo_color = Color(0.439216, 0.458824, 0.45098, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_rock"]
+material = SubResource("Material_rock")
+radius = 0.55
+height = 1.1
+radial_segments = 6
+rings = 3
+
+[node name="WalkTest" type="Node3D" unique_id=1933271414]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1337245570]
+environment = SubResource("Environment_demo")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=586071897]
+transform = Transform3D(0.90630794, 0.36599842, -0.2113081, 0, 0.4999979, 0.86602664, 0.42261797, -0.78488684, 0.4531521, 0, 8, 0)
+light_color = Color(1, 0.960784, 0.878431, 1)
+light_energy = 1.15
+shadow_enabled = true
+directional_shadow_max_distance = 40.0
+
+[node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1651594942]
+transform = Transform3D(-1, 1.6292076e-07, -2.8218685e-07, 0, 0.86602527, 0.50000024, 3.2584137e-07, 0.50000024, -0.86602527, 0, 0, 0)
+light_color = Color(0.721569, 0.831373, 1, 1)
+light_energy = 0.5
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=509988925]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=186989960]
+mesh = SubResource("PlaneMesh_ground")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1119064188]
+shape = SubResource("WorldBoundaryShape3D_ground")
+
+[node name="Props" type="Node3D" parent="." unique_id=1882636340]
+
+[node name="Tree1" parent="Props" unique_id=860533538 instance=ExtResource("2_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, -5)
+
+[node name="Tree2" parent="Props" unique_id=837662510 instance=ExtResource("2_tree")]
+transform = Transform3D(1.15, 0, 0, 0, 1.15, 0, 0, 0, 1.15, 6.5, 0, -8)
+
+[node name="Tree3" parent="Props" unique_id=212494380 instance=ExtResource("2_tree")]
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -9.5, 0, 1.5)
+
+[node name="Tree4" parent="Props" unique_id=1883108424 instance=ExtResource("2_tree")]
+transform = Transform3D(1.05, 0, 0, 0, 1.05, 0, 0, 0, 1.05, 9, 0, 3)
+
+[node name="Tree5" parent="Props" unique_id=1477286364 instance=ExtResource("2_tree")]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, -4, 0, 8.5)
+
+[node name="Tree6" parent="Props" unique_id=865236321 instance=ExtResource("2_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0, 9.5)
+
+[node name="Tree7" parent="Props" unique_id=1462631865 instance=ExtResource("2_tree")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, -13, 0, -12)
+
+[node name="Tree8" parent="Props" unique_id=1951243904 instance=ExtResource("2_tree")]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 13, 0, -3.5)
+
+[node name="Tree9" parent="Props" unique_id=1196607033 instance=ExtResource("2_tree")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, -5.6, 0, 6.5)
+
+[node name="Rock1" type="MeshInstance3D" parent="Props" unique_id=767806988]
+transform = Transform3D(0.8, 0, 0, 0, 0.45, 0, 0, 0, 0.65, -4.6, 0.2, -1.2)
+mesh = SubResource("SphereMesh_rock")
+
+[node name="Rock2" type="MeshInstance3D" parent="Props" unique_id=2104216023]
+transform = Transform3D(0.6, 0, 0, 0, 0.35, 0, 0, 0, 0.5, -2.5, 0.15, 2.8)
+mesh = SubResource("SphereMesh_rock")
+
+[node name="Rock3" type="MeshInstance3D" parent="Props" unique_id=1990086252]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0, 0, 0, 0.8, 7.5, 0.25, 1.5)
+mesh = SubResource("SphereMesh_rock")
+
+[node name="Rock4" type="MeshInstance3D" parent="Props" unique_id=1801346347]
+transform = Transform3D(0.7, 0, 0, 0, 0.4, 0, 0, 0, 0.55, -7, 0.18, -2)
+mesh = SubResource("SphereMesh_rock")
+
+[node name="Human" parent="." unique_id=91325914 instance=ExtResource("1_human")]
+
+[node name="PracticeField" type="Node3D" parent="." unique_id=1927231893]
+
+[node name="DummyLeft" parent="PracticeField" unique_id=2078442443 instance=ExtResource("6_dummy")]
+transform = Transform3D(0.98722726, 0, 0.15931821, 0, 1, 0, -0.15931821, 0, 0.98722726, -2.2, 0, -4.2)
+
+[node name="DummyCenter" parent="PracticeField" unique_id=318326543 instance=ExtResource("6_dummy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
+display_name = "OAKEN POST"
+
+[node name="DummyRight" parent="PracticeField" unique_id=2045788634 instance=ExtResource("6_dummy")]
+transform = Transform3D(0.98722726, 0, -0.15931821, 0, 1, 0, 0.15931821, 0, 0.98722726, 2.2, 0, -4.2)
+display_name = "STRAW SENTINEL"
+
+[node name="Wayfarer" parent="." unique_id=797232512 instance=ExtResource("7_wayfarer")]
+transform = Transform3D(0.87758255, 0, 0.47942555, 0, 1, 0, -0.47942555, 0, 0.87758255, 4.4, 0, -1.8)
+
+[node name="OldWell" parent="." unique_id=953023994 instance=ExtResource("8_well")]
+transform = Transform3D(0.9393727, 0, 0.3428978, 0, 1, 0, -0.3428978, 0, 0.9393727, 7.2, 0, -4.4)
+
+[node name="Camera" type="Camera3D" parent="." unique_id=1327190496]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 2.7, 4.6)
+current = true
+fov = 40.0
+far = 120.0
+script = ExtResource("3_camera")
+target_path = NodePath("../Human")
+offset = Vector3(-2.8, 2.7, 4.6)
+
+[node name="HUD" parent="." unique_id=1269484765 instance=ExtResource("5_hud")]

@@ -1,0 +1,74 @@
+[gd_scene load_steps=7 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material_brass"]
+albedo_color = Color(0.88, 0.71, 0.34, 1)
+metallic = 0.8
+roughness = 0.3
+
+[sub_resource type="StandardMaterial3D" id="Material_cord"]
+albedo_color = Color(0.3, 0.18, 0.1, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="Material_amber"]
+albedo_color = Color(1, 0.76, 0.32, 1)
+emission_enabled = true
+emission = Color(1, 0.56, 0.16, 1)
+emission_energy_multiplier = 1.6
+roughness = 0.2
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cord"]
+material = SubResource("Material_cord")
+top_radius = 0.008
+bottom_radius = 0.008
+height = 0.22
+radial_segments = 5
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+material = SubResource("Material_brass")
+inner_radius = 0.045
+outer_radius = 0.062
+rings = 10
+ring_segments = 6
+
+[sub_resource type="SphereMesh" id="SphereMesh_gem"]
+material = SubResource("Material_amber")
+radius = 0.036
+height = 0.072
+radial_segments = 8
+rings = 4
+
+[sub_resource type="BoxMesh" id="BoxMesh_sun"]
+material = SubResource("Material_brass")
+size = Vector3(0.11, 0.014, 0.014)
+
+[node name="WayfarersCharm" type="Node3D"]
+
+[node name="Cord" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.06, 0)
+mesh = SubResource("CylinderMesh_cord")
+
+[node name="Ring" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.18, 0)
+rotation = Vector3(1.570796, 0, 0)
+mesh = SubResource("TorusMesh_ring")
+
+[node name="Gem" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.18, 0)
+mesh = SubResource("SphereMesh_gem")
+
+[node name="SunRayA" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.18, 0)
+rotation = Vector3(0, 0, 0.785398)
+mesh = SubResource("BoxMesh_sun")
+
+[node name="SunRayB" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.18, 0)
+rotation = Vector3(0, 0, -0.785398)
+mesh = SubResource("BoxMesh_sun")
+
+[node name="CharmGlow" type="OmniLight3D" parent="."]
+position = Vector3(0, -0.18, 0)
+light_color = Color(1, 0.72, 0.34, 1)
+light_energy = 0.45
+omni_range = 1.8
+shadow_enabled = false

@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/world/shrine.gd" id="1_shrine"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_shrine"]
+radius = 1.7
+height = 1.4
+
+[node name="Wayshrine" type="StaticBody3D"]
+script = ExtResource("1_shrine")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.7, 0)
+shape = SubResource("CylinderShape3D_shrine")

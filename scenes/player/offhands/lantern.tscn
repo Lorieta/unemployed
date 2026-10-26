@@ -1,0 +1,95 @@
+[gd_scene load_steps=9 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material_iron"]
+albedo_color = Color(0.18, 0.18, 0.2, 1)
+metallic = 0.75
+roughness = 0.45
+
+[sub_resource type="StandardMaterial3D" id="Material_brass"]
+albedo_color = Color(0.72, 0.57, 0.27, 1)
+metallic = 0.75
+roughness = 0.36
+
+[sub_resource type="StandardMaterial3D" id="Material_glass"]
+albedo_color = Color(1, 0.8, 0.44, 0.35)
+transparency = 1
+roughness = 0.08
+
+[sub_resource type="StandardMaterial3D" id="Material_fire"]
+albedo_color = Color(0.62, 1, 0.62, 1)
+emission_enabled = true
+emission = Color(0.38, 1, 0.5, 1)
+emission_energy_multiplier = 3.4
+roughness = 0.2
+
+[sub_resource type="TorusMesh" id="TorusMesh_handle"]
+material = SubResource("Material_iron")
+inner_radius = 0.05
+outer_radius = 0.066
+rings = 10
+ring_segments = 6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cap"]
+material = SubResource("Material_brass")
+top_radius = 0.075
+bottom_radius = 0.095
+height = 0.035
+radial_segments = 8
+
+[sub_resource type="BoxMesh" id="BoxMesh_glass"]
+material = SubResource("Material_glass")
+size = Vector3(0.13, 0.17, 0.13)
+
+[sub_resource type="SphereMesh" id="SphereMesh_fire"]
+material = SubResource("Material_fire")
+radius = 0.05
+height = 0.1
+radial_segments = 8
+rings = 4
+
+[sub_resource type="BoxMesh" id="BoxMesh_bar"]
+material = SubResource("Material_iron")
+size = Vector3(0.014, 0.19, 0.014)
+
+[node name="FoxfireLantern" type="Node3D"]
+
+[node name="Handle" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0)
+rotation = Vector3(1.570796, 0, 0)
+mesh = SubResource("TorusMesh_handle")
+
+[node name="CapTop" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.07, 0)
+mesh = SubResource("CylinderMesh_cap")
+
+[node name="Glass" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.17, 0)
+mesh = SubResource("BoxMesh_glass")
+
+[node name="Fire" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.17, 0)
+mesh = SubResource("SphereMesh_fire")
+
+[node name="BarLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.072, -0.17, 0)
+mesh = SubResource("BoxMesh_bar")
+
+[node name="BarRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.072, -0.17, 0)
+mesh = SubResource("BoxMesh_bar")
+
+[node name="BarFront" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.17, -0.072)
+mesh = SubResource("BoxMesh_bar")
+
+[node name="CapBottom" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.28, 0)
+rotation = Vector3(3.141593, 0, 0)
+mesh = SubResource("CylinderMesh_cap")
+
+[node name="FireLight" type="OmniLight3D" parent="."]
+position = Vector3(0, -0.17, 0)
+light_color = Color(0.55, 1, 0.66, 1)
+light_energy = 1.2
+omni_range = 4.2
+shadow_enabled = false

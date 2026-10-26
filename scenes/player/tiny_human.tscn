@@ -1,0 +1,398 @@
+[gd_scene load_steps=44 format=3]
+
+[ext_resource type="Script" path="res://scenes/player/tiny_human.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/player/weapons/sword.tscn" id="2_sword"]
+[ext_resource type="PackedScene" path="res://scenes/player/weapons/dagger.tscn" id="3_dagger"]
+[ext_resource type="PackedScene" path="res://scenes/player/weapons/staff.tscn" id="4_staff"]
+[ext_resource type="PackedScene" path="res://scenes/player/weapons/bow.tscn" id="5_bow"]
+[ext_resource type="PackedScene" path="res://scenes/player/weapons/kitsune.tscn" id="6_kitsune"]
+[ext_resource type="Script" path="res://scenes/player/weapons/blade_trail.gd" id="7_trail"]
+[ext_resource type="Script" path="res://scenes/player/hero_look.gd" id="8_look"]
+[ext_resource type="PackedScene" path="res://scenes/player/offhands/shield.tscn" id="9_shield"]
+[ext_resource type="PackedScene" path="res://scenes/player/offhands/gauntlet.tscn" id="10_gauntlet"]
+[ext_resource type="PackedScene" path="res://scenes/player/offhands/tome.tscn" id="11_tome"]
+[ext_resource type="PackedScene" path="res://scenes/player/offhands/charm.tscn" id="12_charm"]
+[ext_resource type="PackedScene" path="res://scenes/player/offhands/lantern.tscn" id="13_lantern"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_collision"]
+radius = 0.24
+height = 1.34
+
+[sub_resource type="StandardMaterial3D" id="Material_skin"]
+albedo_color = Color(0.921569, 0.701961, 0.552941, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Material_shirt"]
+albedo_color = Color(0.133333, 0.552941, 0.552941, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="Material_pants"]
+albedo_color = Color(0.156863, 0.196078, 0.309804, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="Material_shoes"]
+albedo_color = Color(0.09, 0.082353, 0.101961, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Material_hair"]
+albedo_color = Color(0.239216, 0.141176, 0.082353, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Material_eyes"]
+albedo_color = Color(0.039216, 0.039216, 0.047059, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Material_leather"]
+albedo_color = Color(0.294118, 0.180392, 0.105882, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Material_brass"]
+albedo_color = Color(0.698039, 0.552941, 0.25098, 1)
+metallic = 0.6
+roughness = 0.45
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_torso"]
+material = SubResource("Material_shirt")
+radius = 0.185
+height = 0.44
+radial_segments = 10
+rings = 6
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_upper_arm"]
+material = SubResource("Material_skin")
+radius = 0.055
+height = 0.26
+radial_segments = 8
+rings = 4
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_lower_arm"]
+material = SubResource("Material_skin")
+radius = 0.048
+height = 0.22
+radial_segments = 8
+rings = 4
+
+[sub_resource type="SphereMesh" id="SphereMesh_hand"]
+material = SubResource("Material_skin")
+radius = 0.055
+height = 0.11
+radial_segments = 8
+rings = 4
+
+[sub_resource type="SphereMesh" id="SphereMesh_shoulder"]
+material = SubResource("Material_skin")
+radius = 0.075
+height = 0.15
+radial_segments = 8
+rings = 4
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+material = SubResource("Material_skin")
+radius = 0.195
+height = 0.39
+radial_segments = 12
+rings = 8
+
+[sub_resource type="SphereMesh" id="SphereMesh_hair"]
+material = SubResource("Material_hair")
+radius = 0.205
+height = 0.32
+radial_segments = 12
+rings = 6
+
+[sub_resource type="BoxMesh" id="BoxMesh_nose"]
+material = SubResource("Material_skin")
+size = Vector3(0.05, 0.06, 0.07)
+
+[sub_resource type="BoxMesh" id="BoxMesh_eye"]
+material = SubResource("Material_eyes")
+size = Vector3(0.032, 0.042, 0.025)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pelvis"]
+material = SubResource("Material_pants")
+size = Vector3(0.28, 0.16, 0.19)
+
+[sub_resource type="BoxMesh" id="BoxMesh_belt"]
+material = SubResource("Material_leather")
+size = Vector3(0.286, 0.035, 0.196)
+
+[sub_resource type="BoxMesh" id="BoxMesh_buckle"]
+material = SubResource("Material_brass")
+size = Vector3(0.05, 0.035, 0.012)
+
+[sub_resource type="BoxMesh" id="BoxMesh_satchel"]
+material = SubResource("Material_leather")
+size = Vector3(0.11, 0.15, 0.085)
+
+[sub_resource type="BoxMesh" id="BoxMesh_satchel_flap"]
+material = SubResource("Material_leather")
+size = Vector3(0.115, 0.05, 0.09)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_upper_leg"]
+material = SubResource("Material_pants")
+radius = 0.07
+height = 0.34
+radial_segments = 8
+rings = 4
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_lower_leg"]
+material = SubResource("Material_pants")
+radius = 0.06
+height = 0.30
+radial_segments = 8
+rings = 4
+
+[sub_resource type="BoxMesh" id="BoxMesh_foot"]
+material = SubResource("Material_shoes")
+size = Vector3(0.13, 0.065, 0.21)
+
+[sub_resource type="StandardMaterial3D" id="Material_torch_wood"]
+albedo_color = Color(0.32, 0.19, 0.1, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="Material_flame"]
+albedo_color = Color(1, 0.72, 0.32, 1)
+emission_enabled = true
+emission = Color(1, 0.56, 0.16, 1)
+emission_energy_multiplier = 3.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_torch"]
+material = SubResource("Material_torch_wood")
+top_radius = 0.018
+bottom_radius = 0.026
+height = 0.46
+radial_segments = 6
+
+[sub_resource type="SphereMesh" id="SphereMesh_flame"]
+material = SubResource("Material_flame")
+radius = 0.065
+height = 0.2
+radial_segments = 8
+rings = 5
+
+[node name="TinyHuman" type="CharacterBody3D" groups=["player"]]
+floor_snap_length = 0.2
+script = ExtResource("1_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.67, 0)
+shape = SubResource("CapsuleShape3D_collision")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Body" type="Node3D" parent="Visual"]
+position = Vector3(0, 0.655, 0)
+
+[node name="Pelvis" type="MeshInstance3D" parent="Visual/Body"]
+mesh = SubResource("BoxMesh_pelvis")
+
+[node name="Belt" type="MeshInstance3D" parent="Visual/Body"]
+position = Vector3(0, 0.055, 0)
+mesh = SubResource("BoxMesh_belt")
+
+[node name="Buckle" type="MeshInstance3D" parent="Visual/Body"]
+position = Vector3(0, 0.055, -0.104)
+mesh = SubResource("BoxMesh_buckle")
+
+[node name="Satchel" type="MeshInstance3D" parent="Visual/Body"]
+position = Vector3(0.2, -0.01, 0.01)
+mesh = SubResource("BoxMesh_satchel")
+
+[node name="SatchelFlap" type="MeshInstance3D" parent="Visual/Body"]
+position = Vector3(0.2, 0.062, 0.01)
+mesh = SubResource("BoxMesh_satchel_flap")
+
+[node name="UpperBody" type="Node3D" parent="Visual/Body"]
+
+[node name="Torso" type="MeshInstance3D" parent="Visual/Body/UpperBody"]
+position = Vector3(0, 0.25, 0)
+mesh = SubResource("CapsuleMesh_torso")
+
+[node name="HeadPivot" type="Node3D" parent="Visual/Body/UpperBody"]
+position = Vector3(0, 0.45, 0)
+
+[node name="Head" type="MeshInstance3D" parent="Visual/Body/UpperBody/HeadPivot"]
+position = Vector3(0, 0.16, 0)
+mesh = SubResource("SphereMesh_head")
+
+[node name="Hair" type="MeshInstance3D" parent="Visual/Body/UpperBody/HeadPivot"]
+position = Vector3(0, 0.205, 0.012)
+mesh = SubResource("SphereMesh_hair")
+
+[node name="Nose" type="MeshInstance3D" parent="Visual/Body/UpperBody/HeadPivot"]
+position = Vector3(0, 0.13, -0.195)
+mesh = SubResource("BoxMesh_nose")
+
+[node name="EyeLeft" type="MeshInstance3D" parent="Visual/Body/UpperBody/HeadPivot"]
+position = Vector3(-0.07, 0.18, -0.187)
+mesh = SubResource("BoxMesh_eye")
+
+[node name="EyeRight" type="MeshInstance3D" parent="Visual/Body/UpperBody/HeadPivot"]
+position = Vector3(0.07, 0.18, -0.187)
+mesh = SubResource("BoxMesh_eye")
+
+[node name="LeftShoulder" type="Node3D" parent="Visual/Body/UpperBody"]
+position = Vector3(-0.205, 0.39, 0)
+rotation = Vector3(0, 0, -0.08)
+
+[node name="ShoulderJoint" type="MeshInstance3D" parent="Visual/Body/UpperBody/LeftShoulder"]
+mesh = SubResource("SphereMesh_shoulder")
+
+[node name="UpperArm" type="MeshInstance3D" parent="Visual/Body/UpperBody/LeftShoulder"]
+position = Vector3(0, -0.125, 0)
+mesh = SubResource("CapsuleMesh_upper_arm")
+
+[node name="Elbow" type="Node3D" parent="Visual/Body/UpperBody/LeftShoulder"]
+position = Vector3(0, -0.24, 0)
+
+[node name="LowerArm" type="MeshInstance3D" parent="Visual/Body/UpperBody/LeftShoulder/Elbow"]
+position = Vector3(0, -0.105, 0)
+mesh = SubResource("CapsuleMesh_lower_arm")
+
+[node name="Hand" type="MeshInstance3D" parent="Visual/Body/UpperBody/LeftShoulder/Elbow"]
+position = Vector3(0, -0.21, 0)
+mesh = SubResource("SphereMesh_hand")
+
+[node name="Mount" type="Node3D" parent="Visual/Body/UpperBody/LeftShoulder/Elbow/Hand"]
+position = Vector3(0, -0.03, -0.02)
+
+[node name="Bow" parent="Visual/Body/UpperBody/LeftShoulder/Elbow/Hand/Mount" instance=ExtResource("5_bow")]
+visible = false
+position = Vector3(0, -0.05, -0.06)
+rotation = Vector3(-1.570796, 0, 0)
+
+[node name="Kitsune" parent="Visual/Body/UpperBody/LeftShoulder/Elbow/Hand/Mount" instance=ExtResource("6_kitsune")]
+visible = false
+position = Vector3(0, -0.02, -0.22)
+scale = Vector3(0.9, 0.9, 0.9)
+
+[node name="OffhandMount" type="Node3D" parent="Visual/Body/UpperBody/LeftShoulder/Elbow/Hand"]
+position = Vector3(-0.02, -0.05, -0.03)
+
+[node name="Shield" parent="Visual/Body/UpperBody/LeftShoulder/Elbow/Hand/OffhandMount" instance=ExtResource("9_shield")]
+visible = false
+position = Vector3(0.06, -0.02, -0.08)
+
+[node name="Gauntlet" parent="Visual/Body/UpperBody/LeftShoulder/Elbow/Hand/OffhandMount" instance=ExtResource("10_gauntlet")]
+visible = false
+position = Vector3(0.0, 0.0, 0.0)
+
+[node name="Tome" parent="Visual/Body/UpperBody/LeftShoulder/Elbow/Hand/OffhandMount" instance=ExtResource("11_tome")]
+visible = false
+position = Vector3(0.02, 0.02, -0.1)
+
+[node name="Charm" parent="Visual/Body/UpperBody/LeftShoulder/Elbow/Hand/OffhandMount" instance=ExtResource("12_charm")]
+visible = false
+position = Vector3(0.0, -0.02, -0.05)
+scale = Vector3(0.9, 0.9, 0.9)
+
+[node name="Lantern" parent="Visual/Body/UpperBody/LeftShoulder/Elbow/Hand/OffhandMount" instance=ExtResource("13_lantern")]
+visible = false
+position = Vector3(0.04, -0.03, -0.05)
+scale = Vector3(0.86, 0.86, 0.86)
+
+[node name="RightShoulder" type="Node3D" parent="Visual/Body/UpperBody"]
+position = Vector3(0.205, 0.39, 0)
+rotation = Vector3(0, 0, 0.08)
+
+[node name="ShoulderJoint" type="MeshInstance3D" parent="Visual/Body/UpperBody/RightShoulder"]
+mesh = SubResource("SphereMesh_shoulder")
+
+[node name="UpperArm" type="MeshInstance3D" parent="Visual/Body/UpperBody/RightShoulder"]
+position = Vector3(0, -0.125, 0)
+mesh = SubResource("CapsuleMesh_upper_arm")
+
+[node name="Elbow" type="Node3D" parent="Visual/Body/UpperBody/RightShoulder"]
+position = Vector3(0, -0.24, 0)
+
+[node name="LowerArm" type="MeshInstance3D" parent="Visual/Body/UpperBody/RightShoulder/Elbow"]
+position = Vector3(0, -0.105, 0)
+mesh = SubResource("CapsuleMesh_lower_arm")
+
+[node name="Hand" type="MeshInstance3D" parent="Visual/Body/UpperBody/RightShoulder/Elbow"]
+position = Vector3(0, -0.21, 0)
+mesh = SubResource("SphereMesh_hand")
+
+[node name="Mount" type="Node3D" parent="Visual/Body/UpperBody/RightShoulder/Elbow/Hand"]
+position = Vector3(0.03, -0.03, -0.02)
+
+[node name="Sword" parent="Visual/Body/UpperBody/RightShoulder/Elbow/Hand/Mount" instance=ExtResource("2_sword")]
+visible = false
+position = Vector3(0, -0.07, -0.04)
+rotation = Vector3(0, 0, -0.1)
+
+[node name="Dagger" parent="Visual/Body/UpperBody/RightShoulder/Elbow/Hand/Mount" instance=ExtResource("3_dagger")]
+visible = false
+position = Vector3(0, -0.05, -0.05)
+rotation = Vector3(0, 0, -0.08)
+
+[node name="Staff" parent="Visual/Body/UpperBody/RightShoulder/Elbow/Hand/Mount" instance=ExtResource("4_staff")]
+visible = false
+position = Vector3(0.02, -0.04, -0.04)
+
+[node name="LeftHip" type="Node3D" parent="Visual/Body"]
+position = Vector3(-0.095, 0, 0)
+
+[node name="UpperLeg" type="MeshInstance3D" parent="Visual/Body/LeftHip"]
+position = Vector3(0, -0.16, 0)
+mesh = SubResource("CapsuleMesh_upper_leg")
+
+[node name="Knee" type="Node3D" parent="Visual/Body/LeftHip"]
+position = Vector3(0, -0.32, 0)
+
+[node name="LowerLeg" type="MeshInstance3D" parent="Visual/Body/LeftHip/Knee"]
+position = Vector3(0, -0.14, 0)
+mesh = SubResource("CapsuleMesh_lower_leg")
+
+[node name="Foot" type="Node3D" parent="Visual/Body/LeftHip/Knee"]
+position = Vector3(0, -0.28, 0)
+
+[node name="FootMesh" type="MeshInstance3D" parent="Visual/Body/LeftHip/Knee/Foot"]
+position = Vector3(0, -0.02, -0.04)
+mesh = SubResource("BoxMesh_foot")
+
+[node name="RightHip" type="Node3D" parent="Visual/Body"]
+position = Vector3(0.095, 0, 0)
+
+[node name="UpperLeg" type="MeshInstance3D" parent="Visual/Body/RightHip"]
+position = Vector3(0, -0.16, 0)
+mesh = SubResource("CapsuleMesh_upper_leg")
+
+[node name="Knee" type="Node3D" parent="Visual/Body/RightHip"]
+position = Vector3(0, -0.32, 0)
+
+[node name="LowerLeg" type="MeshInstance3D" parent="Visual/Body/RightHip/Knee"]
+position = Vector3(0, -0.14, 0)
+mesh = SubResource("CapsuleMesh_lower_leg")
+
+[node name="Foot" type="Node3D" parent="Visual/Body/RightHip/Knee"]
+position = Vector3(0, -0.28, 0)
+
+[node name="FootMesh" type="MeshInstance3D" parent="Visual/Body/RightHip/Knee/Foot"]
+position = Vector3(0, -0.02, -0.04)
+mesh = SubResource("BoxMesh_foot")
+
+[node name="TorchRig" type="Node3D" parent="Visual/Body/UpperBody"]
+visible = false
+position = Vector3(0.34, 0.16, -0.02)
+rotation = Vector3(0, 0, -0.22)
+
+[node name="Handle" type="MeshInstance3D" parent="Visual/Body/UpperBody/TorchRig"]
+mesh = SubResource("CylinderMesh_torch")
+
+[node name="Flame" type="MeshInstance3D" parent="Visual/Body/UpperBody/TorchRig"]
+position = Vector3(0, 0.3, 0)
+mesh = SubResource("SphereMesh_flame")
+
+[node name="TorchLight" type="OmniLight3D" parent="Visual/Body/UpperBody/TorchRig"]
+position = Vector3(0, 0.34, 0)
+light_color = Color(1, 0.68, 0.34, 1)
+light_energy = 1.6
+omni_range = 6.0
+shadow_enabled = false
+
+[node name="BladeTrail" type="MeshInstance3D" parent="."]
+script = ExtResource("7_trail")
+
+[node name="HeroLook" type="Node3D" parent="."]
+script = ExtResource("8_look")

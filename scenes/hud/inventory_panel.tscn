@@ -1,0 +1,366 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/hud/inventory_panel.gd" id="1_inventory"]
+[ext_resource type="Script" path="res://scenes/hud/ornate_panel.gd" id="2_ornate"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/coin.svg" id="3_coin"]
+
+[node name="Inventory" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_inventory")
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.008, 0.006, 0.004, 0.62)
+
+[node name="Panel" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -500.0
+offset_top = -300.0
+offset_right = 500.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.041, 0.03, 0.97)
+border_color = Color(0.8, 0.65, 0.35, 1)
+top_gem = true
+
+[node name="Title" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 12.0
+offset_right = 968.0
+offset_bottom = 44.0
+theme_override_colors/font_color = Color(0.96, 0.89, 0.72, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 24
+text = "SATCHEL"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 44.0
+offset_right = 968.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "ALDRIC'S TRAVELS  ·  WEAPONS ARE EQUIPPED IN THE ARMORY"
+horizontal_alignment = 1
+
+[node name="CloseButton" type="Button" parent="Panel"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 40.0
+grow_horizontal = 0
+text = "×"
+
+[node name="Divider" type="ColorRect" parent="Panel"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 74.0
+offset_right = 968.0
+offset_bottom = 75.0
+mouse_filter = 2
+color = Color(0.84, 0.7, 0.4, 0.32)
+
+[node name="EquipmentHeading" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 88.0
+offset_right = 352.0
+offset_bottom = 102.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "EQUIPMENT"
+
+[node name="ItemHeading" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 388.0
+offset_top = 88.0
+offset_right = 520.0
+offset_bottom = 102.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "ITEMS"
+
+[node name="ItemCount" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 560.0
+offset_top = 88.0
+offset_right = 700.0
+offset_bottom = 102.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "12 / 20"
+horizontal_alignment = 2
+
+[node name="ArmoryHeading" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 736.0
+offset_top = 88.0
+offset_right = 968.0
+offset_bottom = 102.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "ARMORY  ·  CLICK TO EQUIP"
+
+[node name="WeaponTab" type="Button" parent="Panel"]
+layout_mode = 0
+offset_left = 736.0
+offset_top = 104.0
+offset_right = 846.0
+offset_bottom = 126.0
+focus_mode = 0
+text = "WEAPONS"
+
+[node name="OffhandTab" type="Button" parent="Panel"]
+layout_mode = 0
+offset_left = 850.0
+offset_top = 104.0
+offset_right = 968.0
+offset_bottom = 126.0
+focus_mode = 0
+text = "OFF-HAND"
+
+[node name="VerticalDivider1" type="ColorRect" parent="Panel"]
+layout_mode = 0
+offset_left = 366.0
+offset_top = 88.0
+offset_right = 367.0
+offset_bottom = 560.0
+mouse_filter = 2
+color = Color(0.84, 0.7, 0.4, 0.22)
+
+[node name="VerticalDivider2" type="ColorRect" parent="Panel"]
+layout_mode = 0
+offset_left = 716.0
+offset_top = 88.0
+offset_right = 717.0
+offset_bottom = 560.0
+mouse_filter = 2
+color = Color(0.84, 0.7, 0.4, 0.22)
+
+[node name="EquipmentRows" type="Control" parent="Panel"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 112.0
+offset_right = 352.0
+offset_bottom = 480.0
+
+[node name="ItemGrid" type="GridContainer" parent="Panel"]
+layout_mode = 0
+offset_left = 388.0
+offset_top = 112.0
+offset_right = 700.0
+offset_bottom = 360.0
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="GoldIcon" type="TextureRect" parent="Panel"]
+layout_mode = 0
+offset_left = 388.0
+offset_top = 376.0
+offset_right = 416.0
+offset_bottom = 404.0
+mouse_filter = 2
+texture = ExtResource("3_coin")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GoldValue" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 424.0
+offset_top = 370.0
+offset_right = 568.0
+offset_bottom = 396.0
+theme_override_colors/font_color = Color(0.96, 0.86, 0.58, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 18
+text = "1,284"
+
+[node name="GoldCaption" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 426.0
+offset_top = 394.0
+offset_right = 568.0
+offset_bottom = 408.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 8
+text = "GOLD IN PURSE"
+
+[node name="Capacity" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 572.0
+offset_top = 374.0
+offset_right = 700.0
+offset_bottom = 408.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "CAPACITY
+24 / 40"
+horizontal_alignment = 2
+
+[node name="ItemHint" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 388.0
+offset_top = 424.0
+offset_right = 700.0
+offset_bottom = 504.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "Click a carried item to use it.  Hover to read its description."
+autowrap_mode = 3
+
+[node name="StatLine" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 486.0
+offset_right = 352.0
+offset_bottom = 504.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "ARMOR 42   ·   POWER 18"
+
+[node name="FlavorNote" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 512.0
+offset_right = 352.0
+offset_bottom = 552.0
+theme_override_colors/font_color = Color(0.5, 0.46, 0.38, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "The road has been kinder to the satchel than to the boots."
+
+[node name="ArmoryRows" type="Control" parent="Panel"]
+layout_mode = 0
+offset_left = 736.0
+offset_top = 130.0
+offset_right = 968.0
+offset_bottom = 420.0
+
+[node name="OffhandRows" type="Control" parent="Panel"]
+visible = false
+layout_mode = 0
+offset_left = 736.0
+offset_top = 130.0
+offset_right = 968.0
+offset_bottom = 420.0
+
+[node name="DetailHeading" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 736.0
+offset_top = 428.0
+offset_right = 968.0
+offset_bottom = 442.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "DETAILS"
+
+[node name="WeaponDetailName" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 736.0
+offset_top = 446.0
+offset_right = 968.0
+offset_bottom = 466.0
+theme_override_colors/font_color = Color(0.97, 0.86, 0.58, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 13
+text = "Wayfarer's Blade"
+
+[node name="WeaponDetailStyle" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 736.0
+offset_top = 466.0
+offset_right = 968.0
+offset_bottom = 482.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "LONGSWORD"
+
+[node name="WeaponDetailStats" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 736.0
+offset_top = 482.0
+offset_right = 968.0
+offset_bottom = 498.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "34 DAMAGE   ·   SWIFT"
+
+[node name="WeaponDetailDesc" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 736.0
+offset_top = 502.0
+offset_right = 968.0
+offset_bottom = 558.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "A balanced arming sword."
+autowrap_mode = 3
+
+[node name="FootNote" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 572.0
+offset_right = 968.0
+offset_bottom = 588.0
+theme_override_colors/font_color = Color(0.5, 0.46, 0.38, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "Press I or ESC to close"
+horizontal_alignment = 1

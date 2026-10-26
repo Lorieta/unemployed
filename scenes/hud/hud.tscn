@@ -1,0 +1,801 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scenes/hud/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scenes/hud/ornate_panel.gd" id="2_ornate"]
+[ext_resource type="Script" path="res://scenes/hud/stat_bar.gd" id="3_bar"]
+[ext_resource type="Script" path="res://scenes/hud/minimap.gd" id="4_minimap"]
+[ext_resource type="Script" path="res://scenes/hud/minimap_overlay.gd" id="5_overlay"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/crest.svg" id="6_crest"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/coin.svg" id="7_coin"]
+[ext_resource type="PackedScene" path="res://scenes/hud/inventory_panel.tscn" id="8_inventory"]
+[ext_resource type="Shader" path="res://scenes/hud/vignette.gdshader" id="9_vignette"]
+[ext_resource type="Script" path="res://scenes/hud/aim_reticle.gd" id="10_reticle"]
+
+[sub_resource type="SystemFont" id="SystemFont_serif"]
+font_names = PackedStringArray("Georgia", "Palatino Linotype", "Book Antiqua", "Times New Roman")
+font_weight = 500
+
+[sub_resource type="Theme" id="Theme_hud"]
+default_font = SubResource("SystemFont_serif")
+default_font_size = 15
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("9_vignette")
+
+[node name="HUD" type="CanvasLayer" groups=["hud"]]
+layer = 10
+script = ExtResource("1_hud")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = SubResource("Theme_hud")
+
+[node name="Vignette" type="ColorRect" parent="Root"]
+material = SubResource("ShaderMaterial_vignette")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="AimReticle" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("10_reticle")
+
+[node name="PlayerPanel" type="Control" parent="Root"]
+layout_mode = 0
+offset_left = 26.0
+offset_top = 26.0
+offset_right = 486.0
+offset_bottom = 194.0
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.04, 0.03, 0.9)
+border_color = Color(0.8, 0.65, 0.35, 1)
+top_gem = true
+
+[node name="PortraitFrame" type="Control" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 18.0
+offset_right = 136.0
+offset_bottom = 138.0
+script = ExtResource("2_ornate")
+fill_color = Color(0.075, 0.06, 0.043, 0.95)
+border_color = Color(0.68, 0.55, 0.3, 0.95)
+inner_margin = 4.0
+
+[node name="Crest" type="TextureRect" parent="Root/PlayerPanel/PortraitFrame"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 108.0
+offset_bottom = 108.0
+mouse_filter = 2
+texture = ExtResource("6_crest")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Name" type="Label" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 152.0
+offset_top = 12.0
+offset_right = 340.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(0.95, 0.89, 0.76, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 20
+text = "ALDRIC"
+
+[node name="Level" type="Label" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 336.0
+offset_top = 18.0
+offset_right = 444.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "LEVEL 7"
+horizontal_alignment = 2
+
+[node name="Class" type="Label" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 152.0
+offset_top = 42.0
+offset_right = 444.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "WANDERER OF THE VERDANT REACH"
+
+[node name="HealthLabel" type="Label" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 152.0
+offset_top = 68.0
+offset_right = 260.0
+offset_bottom = 82.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "HEALTH"
+
+[node name="HealthValue" type="Label" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 68.0
+offset_right = 444.0
+offset_bottom = 82.0
+theme_override_colors/font_color = Color(0.92, 0.87, 0.76, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "122 / 160"
+horizontal_alignment = 2
+
+[node name="HealthBar" type="Control" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 152.0
+offset_top = 84.0
+offset_right = 444.0
+offset_bottom = 106.0
+script = ExtResource("3_bar")
+value = 122.0
+max_value = 160.0
+fill_color = Color(0.66, 0.16, 0.13, 1)
+ghost_color = Color(0.94, 0.84, 0.58, 0.55)
+
+[node name="ManaLabel" type="Label" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 152.0
+offset_top = 112.0
+offset_right = 260.0
+offset_bottom = 126.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "MANA"
+
+[node name="ManaValue" type="Label" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 112.0
+offset_right = 444.0
+offset_bottom = 126.0
+theme_override_colors/font_color = Color(0.92, 0.87, 0.76, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "82 / 120"
+horizontal_alignment = 2
+
+[node name="ManaBar" type="Control" parent="Root/PlayerPanel"]
+layout_mode = 0
+offset_left = 152.0
+offset_top = 128.0
+offset_right = 444.0
+offset_bottom = 148.0
+script = ExtResource("3_bar")
+value = 82.0
+max_value = 120.0
+fill_color = Color(0.2, 0.38, 0.68, 1)
+ghost_color = Color(0.94, 0.84, 0.58, 0.55)
+
+[node name="ZoneBanner" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -210.0
+offset_top = 26.0
+offset_right = 210.0
+offset_bottom = 100.0
+grow_horizontal = 2
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.04, 0.03, 0.68)
+border_color = Color(0.72, 0.58, 0.31, 0.9)
+top_gem = true
+
+[node name="ZoneTitle" type="Label" parent="Root/ZoneBanner"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 408.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(0.95, 0.89, 0.76, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 19
+text = "THE VERDANT REACH"
+horizontal_alignment = 1
+
+[node name="ZoneSub" type="Label" parent="Root/ZoneBanner"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 42.0
+offset_right = 408.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(0.72, 0.63, 0.47, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "CHAPTER I  ·  THE OLD WELL"
+horizontal_alignment = 1
+
+[node name="BossBar" type="Control" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -260.0
+offset_top = 108.0
+offset_right = 260.0
+offset_bottom = 160.0
+grow_horizontal = 2
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.04, 0.03, 0.92)
+border_color = Color(0.68, 0.36, 0.23, 0.95)
+top_gem = true
+
+[node name="BossName" type="Label" parent="Root/BossBar"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 8.0
+offset_right = 504.0
+offset_bottom = 28.0
+theme_override_colors/font_color = Color(0.96, 0.78, 0.56, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 12
+text = "THE BRIAR WARDEN"
+horizontal_alignment = 1
+
+[node name="BossFill" type="Control" parent="Root/BossBar"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 32.0
+offset_right = 502.0
+offset_bottom = 44.0
+script = ExtResource("3_bar")
+value = 900.0
+max_value = 900.0
+fill_color = Color(0.58, 0.16, 0.12, 1)
+ghost_color = Color(0.94, 0.84, 0.58, 0.55)
+
+[node name="MinimapPanel" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -278.0
+offset_top = 26.0
+offset_right = -26.0
+offset_bottom = 302.0
+grow_horizontal = 0
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.04, 0.03, 0.9)
+border_color = Color(0.8, 0.65, 0.35, 1)
+top_gem = true
+
+[node name="MinimapContent" type="Control" parent="Root/MinimapPanel"]
+layout_mode = 0
+offset_right = 252.0
+offset_bottom = 276.0
+script = ExtResource("4_minimap")
+
+[node name="Header" type="Label" parent="Root/MinimapPanel/MinimapContent"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 10.0
+offset_right = 236.0
+offset_bottom = 28.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "THE VERDANT REACH"
+horizontal_alignment = 1
+
+[node name="MapViewport" type="SubViewportContainer" parent="Root/MinimapPanel/MinimapContent"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 34.0
+offset_right = 236.0
+offset_bottom = 254.0
+mouse_filter = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Root/MinimapPanel/MinimapContent/MapViewport"]
+handle_input_locally = false
+size = Vector2i(220, 220)
+render_target_update_mode = 4
+
+[node name="MapCamera" type="Camera3D" parent="Root/MinimapPanel/MinimapContent/MapViewport/SubViewport"]
+position = Vector3(0, 30, 0)
+rotation = Vector3(-1.570796, 0, 0)
+projection = 1
+current = true
+size = 28.0
+near = 0.1
+far = 80.0
+
+[node name="Overlay" type="Control" parent="Root/MinimapPanel/MinimapContent"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 34.0
+offset_right = 236.0
+offset_bottom = 254.0
+mouse_filter = 2
+script = ExtResource("5_overlay")
+
+[node name="North" type="Label" parent="Root/MinimapPanel/MinimapContent"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 38.0
+offset_right = 236.0
+offset_bottom = 56.0
+theme_override_colors/font_color = Color(0.96, 0.86, 0.58, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 11
+text = "N"
+horizontal_alignment = 1
+
+[node name="Footer" type="Label" parent="Root/MinimapPanel/MinimapContent"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 258.0
+offset_right = 236.0
+offset_bottom = 272.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "DAY 3  ·  DUSK"
+horizontal_alignment = 1
+
+[node name="QuestPanel" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -326.0
+offset_top = 318.0
+offset_right = -26.0
+offset_bottom = 516.0
+grow_horizontal = 0
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.04, 0.03, 0.88)
+border_color = Color(0.74, 0.6, 0.32, 0.95)
+
+[node name="QuestTitle" type="Label" parent="Root/QuestPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 12.0
+offset_right = 282.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(0.92, 0.82, 0.6, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 14
+text = "A QUIET ERRAND"
+
+[node name="QuestChapter" type="Label" parent="Root/QuestPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 34.0
+offset_right = 282.0
+offset_bottom = 48.0
+theme_override_colors/font_color = Color(0.55, 0.51, 0.43, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 8
+text = "CHAPTER I  ·  THE OLD WELL"
+
+[node name="QuestDivider" type="ColorRect" parent="Root/QuestPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 56.0
+offset_right = 282.0
+offset_bottom = 57.0
+mouse_filter = 2
+color = Color(0.84, 0.7, 0.4, 0.32)
+
+[node name="Objective1" type="Label" parent="Root/QuestPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 66.0
+offset_right = 282.0
+offset_bottom = 96.0
+theme_override_colors/font_color = Color(0.82, 0.78, 0.68, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 11
+text = "·  Seek the Wayfarer by the old well"
+autowrap_mode = 3
+
+[node name="Objective2" type="Label" parent="Root/QuestPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 98.0
+offset_right = 282.0
+offset_bottom = 128.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 11
+text = "·  Strike the practice dummies    0 / 3"
+autowrap_mode = 3
+
+[node name="Objective3" type="Label" parent="Root/QuestPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 130.0
+offset_right = 282.0
+offset_bottom = 160.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 11
+text = "·  Return to the Wayfarer"
+autowrap_mode = 3
+
+[node name="Reward" type="Label" parent="Root/QuestPanel"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 168.0
+offset_right = 296.0
+offset_bottom = 184.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 8
+text = "REWARD      120 GOLD"
+
+[node name="Quickbar" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -350.0
+offset_top = -152.0
+offset_right = 350.0
+offset_bottom = -26.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.04, 0.03, 0.92)
+border_color = Color(0.8, 0.65, 0.35, 1)
+top_gem = true
+
+[node name="SkillCaption" type="Label" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 8.0
+offset_right = 322.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 8
+text = "SKILL SLOTS  ·  1 - 5  ·  RMB / K TO ASSIGN"
+
+[node name="SkillRow" type="HBoxContainer" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 24.0
+offset_right = 322.0
+offset_bottom = 80.0
+theme_override_constants/separation = 6
+
+[node name="Divider" type="ColorRect" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 338.0
+offset_top = 26.0
+offset_right = 339.0
+offset_bottom = 76.0
+mouse_filter = 2
+color = Color(0.84, 0.7, 0.4, 0.26)
+
+[node name="DividerGem" type="ColorRect" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 334.0
+offset_top = 46.0
+offset_right = 342.0
+offset_bottom = 54.0
+pivot_offset = Vector2(4, 4)
+rotation = 0.785398
+mouse_filter = 2
+color = Color(0.84, 0.7, 0.4, 0.55)
+
+[node name="ItemCaption" type="Label" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 354.0
+offset_top = 8.0
+offset_right = 658.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 8
+text = "ITEM SLOTS  ·  6 - 0"
+
+[node name="ItemRow" type="HBoxContainer" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 354.0
+offset_top = 24.0
+offset_right = 658.0
+offset_bottom = 80.0
+theme_override_constants/separation = 6
+
+[node name="LevelLabel" type="Label" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 86.0
+offset_right = 126.0
+offset_bottom = 100.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "LEVEL 7"
+
+[node name="WeaponLabel" type="Label" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 130.0
+offset_top = 86.0
+offset_right = 540.0
+offset_bottom = 100.0
+theme_override_colors/font_color = Color(0.97, 0.86, 0.58, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "LONGSWORD  ·  WAYFARER'S BLADE"
+horizontal_alignment = 1
+
+[node name="XPLabel" type="Label" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 544.0
+offset_top = 86.0
+offset_right = 682.0
+offset_bottom = 100.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "12,480 / 18,000 XP"
+horizontal_alignment = 2
+
+[node name="XPBar" type="Control" parent="Root/Quickbar"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 104.0
+offset_right = 682.0
+offset_bottom = 110.0
+script = ExtResource("3_bar")
+value = 12480.0
+max_value = 18000.0
+fill_color = Color(0.62, 0.48, 0.2, 1)
+ghost_color = Color(0.94, 0.84, 0.58, 0.55)
+show_ticks = false
+show_ghost = false
+
+[node name="HintPanel" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 26.0
+offset_top = -156.0
+offset_right = 326.0
+offset_bottom = -26.0
+grow_vertical = 0
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.04, 0.03, 0.64)
+border_color = Color(0.6, 0.49, 0.27, 0.8)
+
+[node name="HintHeader" type="Label" parent="Root/HintPanel"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 10.0
+offset_right = 284.0
+offset_bottom = 24.0
+theme_override_colors/font_color = Color(0.84, 0.7, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 9
+text = "TRAVELER'S NOTES"
+
+[node name="HintText" type="Label" parent="Root/HintPanel"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 30.0
+offset_right = 284.0
+offset_bottom = 118.0
+theme_override_colors/font_color = Color(0.66, 0.62, 0.53, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_constants/line_spacing = 2
+theme_override_font_sizes/font_size = 10
+text = "WASD / ARROWS    Walk
+SHIFT    Run
+LMB / SPACE    Attack
+MOUSE    Aim  ·  face the box
+1 - 5    Skill   ·   RMB / K assign
+6 - 0    Item slot
+E    Interact
+I    Satchel"
+
+[node name="Buttons" type="HBoxContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -278.0
+offset_top = -152.0
+offset_right = -26.0
+offset_bottom = -108.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 8
+
+[node name="GoldPanel" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -296.0
+offset_top = -90.0
+offset_right = -26.0
+offset_bottom = -26.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.04, 0.03, 0.9)
+border_color = Color(0.8, 0.65, 0.35, 1)
+
+[node name="Coin" type="TextureRect" parent="Root/GoldPanel"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 48.0
+offset_bottom = 48.0
+mouse_filter = 2
+texture = ExtResource("7_coin")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GoldValue" type="Label" parent="Root/GoldPanel"]
+layout_mode = 0
+offset_left = 56.0
+offset_top = 8.0
+offset_right = 150.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.96, 0.86, 0.58, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 18
+text = "1,284"
+
+[node name="GoldLabel" type="Label" parent="Root/GoldPanel"]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 34.0
+offset_right = 150.0
+offset_bottom = 48.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 8
+text = "GOLD"
+
+[node name="Divider" type="ColorRect" parent="Root/GoldPanel"]
+layout_mode = 0
+offset_left = 162.0
+offset_top = 14.0
+offset_right = 163.0
+offset_bottom = 50.0
+mouse_filter = 2
+color = Color(0.84, 0.7, 0.4, 0.3)
+
+[node name="DayLabel" type="Label" parent="Root/GoldPanel"]
+layout_mode = 0
+offset_left = 178.0
+offset_top = 12.0
+offset_right = 254.0
+offset_bottom = 30.0
+theme_override_colors/font_color = Color(0.92, 0.87, 0.76, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 11
+text = "DAY 3"
+
+[node name="TimeLabel" type="Label" parent="Root/GoldPanel"]
+layout_mode = 0
+offset_left = 178.0
+offset_top = 32.0
+offset_right = 254.0
+offset_bottom = 46.0
+theme_override_colors/font_color = Color(0.63, 0.58, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.9)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 8
+text = "DUSK"
+
+[node name="InteractionPrompt" type="Control" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -196.0
+offset_right = 220.0
+offset_bottom = -148.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("2_ornate")
+fill_color = Color(0.05, 0.04, 0.03, 0.82)
+border_color = Color(0.74, 0.6, 0.32, 0.95)
+
+[node name="PromptText" type="Label" parent="Root/InteractionPrompt"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 0.0
+offset_right = 428.0
+offset_bottom = 48.0
+theme_override_colors/font_color = Color(0.92, 0.87, 0.76, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 12
+text = "[ E ]     Speak with the Wayfarer"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Toast" type="Label" parent="Root"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -320.0
+offset_top = 116.0
+offset_right = 320.0
+offset_bottom = 146.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.96, 0.86, 0.58, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.024, 0.018, 0.95)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 13
+text = ""
+horizontal_alignment = 1
+
+[node name="Inventory" parent="Root" instance=ExtResource("8_inventory")]

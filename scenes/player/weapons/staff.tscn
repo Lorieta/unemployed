@@ -1,0 +1,111 @@
+[gd_scene load_steps=12 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material_wood"]
+albedo_color = Color(0.34, 0.21, 0.11, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Material_brass"]
+albedo_color = Color(0.73, 0.58, 0.27, 1)
+metallic = 0.7
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Material_crystal"]
+albedo_color = Color(0.55, 0.95, 0.88, 1)
+emission_enabled = true
+emission = Color(0.35, 0.95, 0.84, 1)
+emission_energy_multiplier = 2.2
+roughness = 0.2
+
+[sub_resource type="StandardMaterial3D" id="Material_crystal_core"]
+albedo_color = Color(0.92, 1, 0.98, 1)
+emission_enabled = true
+emission = Color(0.75, 1, 0.96, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_shaft"]
+material = SubResource("Material_wood")
+top_radius = 0.023
+bottom_radius = 0.032
+height = 1.5
+radial_segments = 8
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_collar"]
+material = SubResource("Material_brass")
+top_radius = 0.045
+bottom_radius = 0.045
+height = 0.05
+radial_segments = 8
+
+[sub_resource type="BoxMesh" id="BoxMesh_wrap"]
+material = SubResource("Material_brass")
+size = Vector3(0.07, 0.16, 0.07)
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+material = SubResource("Material_brass")
+inner_radius = 0.075
+outer_radius = 0.105
+rings = 12
+ring_segments = 8
+
+[sub_resource type="SphereMesh" id="SphereMesh_crystal"]
+material = SubResource("Material_crystal")
+radius = 0.095
+height = 0.24
+radial_segments = 8
+rings = 5
+
+[sub_resource type="SphereMesh" id="SphereMesh_core"]
+material = SubResource("Material_crystal_core")
+radius = 0.045
+height = 0.12
+radial_segments = 8
+rings = 4
+
+[sub_resource type="BoxMesh" id="BoxMesh_prong"]
+material = SubResource("Material_brass")
+size = Vector3(0.022, 0.16, 0.022)
+
+[node name="Staff" type="Node3D"]
+
+[node name="Shaft" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.52, 0)
+mesh = SubResource("CylinderMesh_shaft")
+
+[node name="GripWrap" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.0, 0)
+mesh = SubResource("BoxMesh_wrap")
+
+[node name="Collar" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.27, 0)
+mesh = SubResource("CylinderMesh_collar")
+
+[node name="CrownRing" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.36, 0)
+rotation = Vector3(1.570796, 0, 0)
+mesh = SubResource("TorusMesh_ring")
+
+[node name="Crystal" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.47, 0)
+mesh = SubResource("SphereMesh_crystal")
+scale = Vector3(1, 1.35, 1)
+
+[node name="CrystalCore" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.47, 0)
+mesh = SubResource("SphereMesh_core")
+
+[node name="ProngLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.1, 1.4, 0)
+rotation = Vector3(0, 0, -0.35)
+mesh = SubResource("BoxMesh_prong")
+
+[node name="ProngRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.1, 1.4, 0)
+rotation = Vector3(0, 0, 0.35)
+mesh = SubResource("BoxMesh_prong")
+
+[node name="SpiritLight" type="OmniLight3D" parent="."]
+position = Vector3(0, 1.45, 0)
+light_color = Color(0.5, 0.95, 0.88, 1)
+light_energy = 0.7
+omni_range = 2.4
+shadow_enabled = false
