@@ -26,16 +26,16 @@ Players fight through increasingly dangerous dungeon rooms using hand-based comb
 
 ### Tasks
 
-- [ ] Create the Godot 4 project.
-- [ ] Configure the GitHub repository.
-- [ ] Establish the folder structure and coding conventions.
+- [done] Create the Godot 4 project.
+- [done] Configure the GitHub repository.
+- [done] Establish the folder structure and coding conventions.
 - [ ] Implement player movement.
 - [ ] Implement camera controls.
 - [ ] Create a basic dungeon room.
 - [ ] Add collision detection and room boundaries.
 - [ ] Implement player health.
 - [ ] Create a basic HUD displaying health.
-- [ ] Establish a shared branching and pull request workflow.
+- [done] Establish a shared branching and pull request workflow.
 
 ### Deliverable
 
