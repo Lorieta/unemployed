@@ -1,0 +1,17 @@
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/Unemployed.GeneratedMSBuildEditorConfig.editorconfig
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/Unemployed.AssemblyInfoInputs.cache
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/Unemployed.AssemblyInfo.cs
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/Unemployed.csproj.CoreCompileInputs.cache
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/Unemployed.sourcelink.json
+/home/john/unemployed/Unemployed/bin/Debug/net8.0/Unemployed.deps.json
+/home/john/unemployed/Unemployed/bin/Debug/net8.0/Unemployed.dll
+/home/john/unemployed/Unemployed/bin/Debug/net8.0/Unemployed.pdb
+/home/john/unemployed/Unemployed/bin/Debug/net8.0/GodotSharp.dll
+/home/john/unemployed/Unemployed/bin/Debug/net8.0/GodotSharp.pdb
+/home/john/unemployed/Unemployed/bin/Debug/net8.0/GodotSharp.xml
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/Unemployed.csproj.AssemblyReference.cache
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/Unemployed.csproj.CopyComplete
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/Unemployed.dll
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/refint/Unemployed.dll
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/Unemployed.pdb
+/home/john/unemployed/Unemployed/obj/Debug/net8.0/ref/Unemployed.dll
