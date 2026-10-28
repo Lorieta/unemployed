@@ -16,6 +16,7 @@ const QUICK_SLOT := preload("res://scenes/hud/quick_slot.tscn")
 const JOURNAL_PANEL := preload("res://scenes/hud/journal_panel.gd")
 const MAP_PANEL := preload("res://scenes/hud/map_panel.gd")
 const SETTINGS_PANEL := preload("res://scenes/hud/settings_panel.gd")
+const PAUSE_MENU := preload("res://scenes/hud/pause_menu.gd")
 const DIALOGUE_PANEL := preload("res://scenes/hud/dialogue_panel.gd")
 const SKILL_LIBRARY := preload("res://scenes/hud/skill_library.gd")
 const SKILL_LIST_PANEL := preload("res://scenes/hud/skill_list_panel.gd")
@@ -147,6 +148,7 @@ var _has_aim := false
 var _journal: JournalPanel
 var _map: MapPanel
 var _settings: SettingsPanel
+var _pause: PauseMenu
 var _dialogue: DialoguePanel
 var _skill_list: Node
 var _overlays: Array[OverlayPanel] = []
@@ -248,11 +250,13 @@ func _build_overlays() -> void:
 	_journal = JOURNAL_PANEL.new() as JournalPanel
 	_map = MAP_PANEL.new() as MapPanel
 	_settings = SETTINGS_PANEL.new() as SettingsPanel
+	_pause = PAUSE_MENU.new() as PauseMenu
 	_dialogue = DIALOGUE_PANEL.new() as DialoguePanel
 	_skill_list = SKILL_LIST_PANEL.new()
 	_shop = SHOP_PANEL.new() as OverlayPanel
 	_overlays = [_journal, _map, _settings, _dialogue, _shop]
 	_overlays.append(_skill_list as OverlayPanel)
+	_overlays.append(_pause)
 	for panel in _overlays:
 		$Root.add_child(panel)
 		panel.closed.connect(_on_overlay_closed)
@@ -260,6 +264,10 @@ func _build_overlays() -> void:
 	_settings.hints_toggled.connect(_on_hints_toggled)
 	_settings.vignette_toggled.connect(_on_vignette_toggled)
 	_settings.restart_requested.connect(_on_restart_requested)
+	_pause.closed.connect(_on_pause_closed)
+	_pause.settings_requested.connect(_on_pause_settings)
+	_pause.quit_to_title_requested.connect(_on_quit_to_title)
+	_pause.quit_game_requested.connect(_on_quit_game)
 	_dialogue.choice_selected.connect(_on_dialogue_choice)
 	_skill_list.connect("skill_chosen", _on_skill_chosen)
 	_skill_list.connect("clear_requested", _on_skill_clear_requested)
@@ -327,6 +335,39 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if not (event is InputEventKey):
 		return
+
+	if event.is_action_pressed("ui_cancel"):
+		if not _any_overlay_open():
+			_toggle_pause()
+			get_viewport().set_input_as_handled()
+		return
+
+func _toggle_pause() -> void:
+	if _pause.visible:
+		_pause.close_panel()
+		return
+	if _input_blocked():
+		return
+	_open_overlay(_pause)
+	get_tree().paused = true
+
+## The pause panel closes itself on ESC or the close button while the tree is
+## paused (it runs with PROCESS_MODE_ALWAYS), so unpausing lives on `closed`.
+func _on_pause_closed() -> void:
+	get_tree().paused = false
+
+func _on_pause_settings() -> void:
+	# Unpause first: the settings panel and HUD freeze while the tree pauses.
+	get_tree().paused = false
+	_show_settings()
+
+func _on_quit_to_title() -> void:
+	# The paused state survives scene changes, so release it explicitly.
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/main/main_menu.tscn")
+
+func _on_quit_game() -> void:
+	get_tree().quit()
 
 func _activate_slot(index: int) -> void:
 	if index < 0 or index >= _slots.size():
@@ -1103,6 +1144,7 @@ func _on_vignette_toggled(enabled: bool) -> void:
 	_vignette.visible = enabled
 
 func _on_restart_requested() -> void:
+	get_tree().paused = false
 	get_tree().reload_current_scene()
 
 # ---------------------------------------------------------------------------

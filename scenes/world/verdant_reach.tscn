@@ -1,8 +1,8 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene format=3 uid="uid://c21atniehxptj"]
 
 [ext_resource type="PackedScene" path="res://scenes/player/tiny_human.tscn" id="1_human"]
-[ext_resource type="Script" path="res://scenes/demo/follow_camera.gd" id="2_camera"]
-[ext_resource type="Shader" path="res://scenes/demo/ground_grid.gdshader" id="3_ground_shader"]
+[ext_resource type="Script" uid="uid://ndmieiahh5hy" path="res://scenes/demo/follow_camera.gd" id="2_camera"]
+[ext_resource type="Shader" uid="uid://ctw68nkacdmir" path="res://scenes/demo/ground_grid.gdshader" id="3_ground_shader"]
 [ext_resource type="PackedScene" path="res://scenes/hud/hud.tscn" id="4_hud"]
 [ext_resource type="PackedScene" path="res://scenes/demo/training_dummy.tscn" id="5_dummy"]
 [ext_resource type="PackedScene" path="res://scenes/demo/wayfarer_npc.tscn" id="6_wayfarer"]
@@ -10,7 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/townsfolk.tscn" id="8_townsfolk"]
 [ext_resource type="PackedScene" path="res://scenes/world/monster.tscn" id="9_monster"]
 [ext_resource type="PackedScene" path="res://scenes/world/shrine.tscn" id="10_shrine"]
-[ext_resource type="Script" path="res://scenes/world/world_builder.gd" id="11_builder"]
+[ext_resource type="Script" uid="uid://6tux7fnf2qu5" path="res://scenes/world/world_builder.gd" id="11_builder"]
 
 [sub_resource type="Environment" id="Environment_reach"]
 background_mode = 1
@@ -29,11 +29,14 @@ fog_density = 0.008
 fog_aerial_perspective = 0.4
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ground"]
+render_priority = 0
 shader = ExtResource("3_ground_shader")
 shader_parameter/base_color = Color(0.29, 0.36, 0.29, 1)
 shader_parameter/tile_color = Color(0.33, 0.4, 0.32, 1)
 shader_parameter/line_color = Color(0.39, 0.46, 0.36, 1)
 shader_parameter/cell_size = 2.0
+shader_parameter/pattern_fade_start = 20.0
+shader_parameter/pattern_fade_end = 60.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
 material = SubResource("ShaderMaterial_ground")
@@ -41,63 +44,58 @@ size = Vector2(220, 220)
 
 [sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_ground"]
 
-[node name="VerdantReach" type="Node3D"]
+[node name="VerdantReach" type="Node3D" unique_id=871306641]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=608196566]
 environment = SubResource("Environment_reach")
 
-[node name="Sun" type="DirectionalLight3D" parent="."]
-position = Vector3(0, 12, 0)
-rotation = Vector3(-0.92, -0.72, 0)
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=155995769]
+transform = Transform3D(0.7518057, 0.5246075, -0.3994685, 0, 0.6058201, 0.7956016, 0.65938467, -0.59813786, 0.45545903, 0, 12, 0)
 light_color = Color(1, 0.94, 0.82, 1)
 light_energy = 1.12
 shadow_enabled = true
 directional_shadow_max_distance = 70.0
 
-[node name="FillLight" type="DirectionalLight3D" parent="."]
-rotation = Vector3(-0.5, 2.5, 0)
+[node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1356978116]
+transform = Transform3D(-0.8159128, -0.31261098, 0.48637545, -0.020211762, 0.8561325, 0.5163612, -0.57782185, 0.41147515, -0.70484763, -0.12636006, 0.054728325, 0.034962177)
 light_color = Color(0.66, 0.78, 1, 1)
 light_energy = 0.42
 
-[node name="Ground" type="StaticBody3D" parent="."]
+[node name="Ground" type="StaticBody3D" parent="." unique_id=132241023]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=2027621768]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.13129234, 9.536743e-07, -0.07172394)
 mesh = SubResource("PlaneMesh_ground")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=778547433]
 shape = SubResource("WorldBoundaryShape3D_ground")
 
-[node name="World" type="Node3D" parent="."]
+[node name="World" type="Node3D" parent="." unique_id=1992351722]
 script = ExtResource("11_builder")
 
-[node name="Well" parent="." instance=ExtResource("7_well")]
-position = Vector3(7, 0, 8)
-rotation = Vector3(0, 0.35, 0)
+[node name="Well" parent="." unique_id=1200478194 instance=ExtResource("7_well")]
+transform = Transform3D(0.92924243, -0.04116117, 0.36717066, 0.046796832, 0.99888355, -0.006455807, -0.36649498, 0.023181442, 0.93013114, 7.075488, 0.17006274, 7.852895)
 
-[node name="PracticeField" type="Node3D" parent="."]
+[node name="PracticeField" type="Node3D" parent="." unique_id=311915799]
 
-[node name="DummyLeft" parent="PracticeField" instance=ExtResource("5_dummy")]
-position = Vector3(-9.4, 0, 15.2)
-rotation = Vector3(0, 0.34, 0)
+[node name="DummyLeft" parent="PracticeField" unique_id=2030258079 instance=ExtResource("5_dummy")]
+transform = Transform3D(0.9427547, 0, 0.3334871, 0, 1, 0, -0.3334871, 0, 0.9427547, -9.4, 0, 15.2)
 
-[node name="DummyCenter" parent="PracticeField" instance=ExtResource("5_dummy")]
-position = Vector3(-6.6, 0, 14.2)
+[node name="DummyCenter" parent="PracticeField" unique_id=731311391 instance=ExtResource("5_dummy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.6, 0, 14.2)
 display_name = "OAKEN POST"
 
-[node name="DummyRight" parent="PracticeField" instance=ExtResource("5_dummy")]
-position = Vector3(-3.8, 0, 15.2)
-rotation = Vector3(0, -0.34, 0)
+[node name="DummyRight" parent="PracticeField" unique_id=1703044229 instance=ExtResource("5_dummy")]
+transform = Transform3D(0.9427547, 0, -0.3334871, 0, 1, 0, 0.3334871, 0, 0.9427547, -3.8, 0, 15.2)
 display_name = "STRAW SENTINEL"
 
-[node name="Wayfarer" parent="." instance=ExtResource("6_wayfarer")]
-position = Vector3(-6.4, 0, 19.4)
-rotation = Vector3(0, 2.65, 0)
+[node name="Wayfarer" parent="." unique_id=1689320301 instance=ExtResource("6_wayfarer")]
+transform = Transform3D(-0.88158226, 0, 0.47203046, 0, 1, 0, -0.47203046, 0, -0.88158226, -6.516024, -0.051332474, 19.4)
 
-[node name="NPCs" type="Node3D" parent="."]
+[node name="NPCs" type="Node3D" parent="." unique_id=2023108968]
 
-[node name="ElderRowan" parent="NPCs" instance=ExtResource("8_townsfolk")]
-position = Vector3(0, 0, -11.2)
-rotation = Vector3(0, 3.14159, 0)
+[node name="ElderRowan" parent="NPCs" unique_id=1487969286 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(-1, 0, 2.5351817e-06, 0, 1, 0, -2.5351817e-06, 0, -1, 0, 0, -11.2)
 npc_id = "elder_rowan"
 display_name = "Elder Rowan"
 role = "elder"
@@ -108,9 +106,8 @@ hair_color = Color(0.78, 0.75, 0.68, 1)
 accent_color = Color(0.4, 0.28, 0.15, 1)
 has_beard = true
 
-[node name="Mira" parent="NPCs" instance=ExtResource("8_townsfolk")]
-position = Vector3(8.2, 0, 3.4)
-rotation = Vector3(0, 1.5708, 0)
+[node name="Mira" parent="NPCs" unique_id=1443394455 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(-3.6199901e-06, 0, 1, 0, 1, 0, -1, 0, -3.6199901e-06, 8.2, 0, 3.4)
 npc_id = "mira"
 display_name = "Mira"
 role = "merchant"
@@ -121,9 +118,8 @@ hair_color = Color(0.36, 0.19, 0.11, 1)
 accent_color = Color(0.52, 0.29, 0.17, 1)
 hat_style = "kerchief"
 
-[node name="Bran" parent="NPCs" instance=ExtResource("8_townsfolk")]
-position = Vector3(-8.4, 0, -5.4)
-rotation = Vector3(0, -1.5708, 0)
+[node name="Bran" parent="NPCs" unique_id=1639688054 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(-3.6199901e-06, 0, -1, 0, 1, 0, 1, 0, -3.6199901e-06, -8.4, 0, -5.4)
 npc_id = "bran"
 display_name = "Bran"
 role = "smith"
@@ -135,9 +131,8 @@ accent_color = Color(0.4, 0.26, 0.13, 1)
 hat_style = "bald"
 has_beard = true
 
-[node name="Tomas" parent="NPCs" instance=ExtResource("8_townsfolk")]
-position = Vector3(4.7, 0, -25.2)
-rotation = Vector3(0, 3.14159, 0)
+[node name="Tomas" parent="NPCs" unique_id=1169189783 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(-1, 0, 2.5351817e-06, 0, 1, 0, -2.5351817e-06, 0, -1, 4.7, 0, -25.2)
 npc_id = "tomas"
 display_name = "Tomas"
 role = "hunter"
@@ -148,12 +143,10 @@ hair_color = Color(0.29, 0.19, 0.11, 1)
 accent_color = Color(0.37, 0.27, 0.15, 1)
 carries_lantern = true
 
-[node name="Nell" parent="NPCs" instance=ExtResource("8_townsfolk")]
-position = Vector3(-3.2, 0, 6.6)
-rotation = Vector3(0, 0.9, 0)
+[node name="Nell" parent="NPCs" unique_id=321306946 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(0.60028654, -0.04116117, 0.7987251, 0.043269817, 0.99888355, 0.018956374, -0.79861367, 0.023181442, 0.6013974, -3.1491277, -0.22479104, 6.7121425)
 npc_id = "nell"
 display_name = "Nell"
-role = "villager"
 robe_color = Color(0.42, 0.3, 0.24, 1)
 trim_color = Color(0.66, 0.52, 0.28, 1)
 skin_color = Color(0.84, 0.67, 0.52, 1)
@@ -161,12 +154,10 @@ hair_color = Color(0.42, 0.24, 0.12, 1)
 accent_color = Color(0.6, 0.38, 0.2, 1)
 hat_style = "kerchief"
 
-[node name="Garrick" parent="NPCs" instance=ExtResource("8_townsfolk")]
-position = Vector3(3.6, 0, -4.8)
-rotation = Vector3(0, -2.2, 0)
+[node name="Garrick" parent="NPCs" unique_id=367510583 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(-0.58850116, 0, -0.80849636, 0, 1, 0, 0.80849636, 0, -0.58850116, 3.6, 0, -4.8)
 npc_id = "garrick"
 display_name = "Old Garrick"
-role = "villager"
 robe_color = Color(0.3, 0.32, 0.28, 1)
 trim_color = Color(0.56, 0.46, 0.28, 1)
 skin_color = Color(0.74, 0.58, 0.44, 1)
@@ -175,12 +166,10 @@ accent_color = Color(0.38, 0.3, 0.2, 1)
 hat_style = "cap"
 has_beard = true
 
-[node name="Wren" parent="NPCs" instance=ExtResource("8_townsfolk")]
-position = Vector3(-12.2, 0, 12.6)
-rotation = Vector3(0, 2.4, 0)
+[node name="Wren" parent="NPCs" unique_id=604592876 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(-0.7373938, 0, 0.67546314, 0, 1, 0, -0.67546314, 0, -0.7373938, -12.2, 0, 12.6)
 npc_id = "wren"
 display_name = "Wren"
-role = "villager"
 robe_color = Color(0.26, 0.34, 0.38, 1)
 trim_color = Color(0.62, 0.52, 0.32, 1)
 skin_color = Color(0.8, 0.62, 0.47, 1)
@@ -188,28 +177,28 @@ hair_color = Color(0.24, 0.16, 0.1, 1)
 accent_color = Color(0.4, 0.34, 0.22, 1)
 carries_lantern = true
 
-[node name="Wayshrine" parent="." instance=ExtResource("10_shrine")]
-position = Vector3(-6, 0, -74)
+[node name="Wayshrine" parent="." unique_id=1338103482 instance=ExtResource("10_shrine")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -74)
 
-[node name="Monsters" type="Node3D" parent="."]
+[node name="Monsters" type="Node3D" parent="." unique_id=1671649911]
 
-[node name="Mossling1" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(-8, 0, -38)
+[node name="Mossling1" parent="Monsters" unique_id=2008874577 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -38)
 
-[node name="Mossling2" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(7, 0, -42)
+[node name="Mossling2" parent="Monsters" unique_id=1269411997 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -42)
 
-[node name="Mossling3" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(-17, 0, -48)
+[node name="Mossling3" parent="Monsters" unique_id=1633743986 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17, 0, -48)
 
-[node name="Mossling4" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(13, 0, -54)
+[node name="Mossling4" parent="Monsters" unique_id=1422270788 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, -54)
 
-[node name="Mossling5" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(-3, 0, -64)
+[node name="Mossling5" parent="Monsters" unique_id=1339751770 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -64)
 
-[node name="Wolf1" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(-12, 0, -44)
+[node name="Wolf1" parent="Monsters" unique_id=950582545 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, -44)
 variant = "briar_wolf"
 display_name = "Briar Wolf"
 max_health = 110.0
@@ -220,8 +209,8 @@ attack_interval = 1.6
 xp_reward = 55.0
 gold_reward = 8
 
-[node name="Wolf2" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(9, 0, -56)
+[node name="Wolf2" parent="Monsters" unique_id=1160022125 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -56)
 variant = "briar_wolf"
 display_name = "Briar Wolf"
 max_health = 110.0
@@ -232,8 +221,8 @@ attack_interval = 1.6
 xp_reward = 55.0
 gold_reward = 8
 
-[node name="Wolf3" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(17, 0, -66)
+[node name="Wolf3" parent="Monsters" unique_id=674205665 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 0, -66)
 variant = "briar_wolf"
 display_name = "Briar Wolf"
 max_health = 110.0
@@ -244,8 +233,8 @@ attack_interval = 1.6
 xp_reward = 55.0
 gold_reward = 8
 
-[node name="Wolf4" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(-18, 0, -70)
+[node name="Wolf4" parent="Monsters" unique_id=1299099573 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, -70)
 variant = "briar_wolf"
 display_name = "Briar Wolf"
 max_health = 110.0
@@ -256,8 +245,8 @@ attack_interval = 1.6
 xp_reward = 55.0
 gold_reward = 8
 
-[node name="Wolf5" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(2, 0, -84)
+[node name="Wolf5" parent="Monsters" unique_id=299056591 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -84)
 variant = "briar_wolf"
 display_name = "Briar Wolf"
 max_health = 110.0
@@ -268,8 +257,8 @@ attack_interval = 1.6
 xp_reward = 55.0
 gold_reward = 8
 
-[node name="Wisp1" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(0, 0, -50)
+[node name="Wisp1" parent="Monsters" unique_id=1479695410 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -50)
 variant = "wisp"
 display_name = "Foxfire Wisp"
 max_health = 60.0
@@ -281,8 +270,8 @@ attack_interval = 2.6
 xp_reward = 50.0
 gold_reward = 7
 
-[node name="Wisp2" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(-14, 0, -58)
+[node name="Wisp2" parent="Monsters" unique_id=1920002740 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -58)
 variant = "wisp"
 display_name = "Foxfire Wisp"
 max_health = 60.0
@@ -294,8 +283,8 @@ attack_interval = 2.6
 xp_reward = 50.0
 gold_reward = 7
 
-[node name="Wisp3" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(11, 0, -76)
+[node name="Wisp3" parent="Monsters" unique_id=440869969 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, -76)
 variant = "wisp"
 display_name = "Foxfire Wisp"
 max_health = 60.0
@@ -307,8 +296,8 @@ attack_interval = 2.6
 xp_reward = 50.0
 gold_reward = 7
 
-[node name="BriarWarden" parent="Monsters" instance=ExtResource("9_monster")]
-position = Vector3(0, 0, -96)
+[node name="BriarWarden" parent="Monsters" unique_id=1254053808 instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -96)
 variant = "briar_warden"
 display_name = "The Briar Warden"
 max_health = 900.0
@@ -322,20 +311,16 @@ gold_reward = 260
 boss = true
 dormant = true
 
-[node name="Human" parent="." instance=ExtResource("1_human")]
-position = Vector3(0, 0, 20)
+[node name="Human" parent="." unique_id=497751500 instance=ExtResource("1_human")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
 
-[node name="Camera" type="Camera3D" parent="."]
+[node name="Camera" type="Camera3D" parent="." unique_id=511141238]
+transform = Transform3D(1, 0, 0, 0, 0.9993628, -0.035692286, 0, 0.035692286, 0.9993628, -2.8, 2.7, 24.6)
 current = true
 fov = 40.0
-near = 0.05
 far = 160.0
-position = Vector3(-2.8, 2.7, 24.6)
 script = ExtResource("2_camera")
 target_path = NodePath("../Human")
 offset = Vector3(-2.8, 2.7, 4.6)
-look_height = 1.0
-follow_smoothing = 7.0
-look_ahead = 0.0
 
-[node name="HUD" parent="." instance=ExtResource("4_hud")]
+[node name="HUD" parent="." unique_id=1244916051 instance=ExtResource("4_hud")]

@@ -585,7 +585,7 @@ func _physics_process(delta: float) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if movement_locked:
 		input = Vector2.ZERO
-	var move_direction := Vector3(input.x, 0.0, input.y)
+	var move_direction := _camera_relative_direction(input)
 	var has_input := move_direction.length_squared() > 0.001
 	if has_input:
 		move_direction = move_direction.normalized()
@@ -631,6 +631,19 @@ func _physics_process(delta: float) -> void:
 
 	_scan_interactions(delta)
 	_animate(delta)
+
+## WASD moves relative to the active camera: W is the camera's horizontal
+## forward. Falls back to world-relative input when no camera is active.
+func _camera_relative_direction(input: Vector2) -> Vector3:
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return Vector3(input.x, 0.0, input.y)
+	var cam_basis := camera.global_basis
+	var cam_forward := -cam_basis.z
+	cam_forward.y = 0.0
+	var cam_right := cam_basis.x
+	cam_right.y = 0.0
+	return cam_right * input.x + cam_forward * -input.y
 
 func _scan_interactions(delta: float) -> void:
 	_interaction_scan -= delta
