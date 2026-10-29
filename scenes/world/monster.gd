@@ -43,6 +43,14 @@ var _collision: CollisionShape3D
 var _wisp := false
 var _height := 1.2
 var _radius := 0.42
+var _slow_time := 0.0
+var _slow_factor := 1.0
+var _distract_time := 0.0
+var _distract_point := Vector3.ZERO
+var _poison_time := 0.0
+var _poison_dps := 0.0
+var _poison_tick := 0.0
+var _poison_source := Vector3.ZERO
 
 func _ready() -> void:
 	add_to_group("enemy")
@@ -316,9 +324,16 @@ func _physics_process(delta: float) -> void:
 	_attack_cooldown = maxf(0.0, _attack_cooldown - delta)
 	if _dead:
 		return
+	_update_status(delta)
+	if _dead:
+		return
 	if _player == null or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as Node3D
 	_update_bar_visibility()
+
+	if _distract_time > 0.0:
+		_update_distracted(delta)
+		return
 
 	if dormant or _player == null:
 		_idle(delta)
@@ -327,10 +342,11 @@ func _physics_process(delta: float) -> void:
 	var offset := _player.global_position - global_position
 	offset.y = 0.0
 	var distance := offset.length()
+	var speed := move_speed * _slow_multiplier()
 	if distance <= aggro_range and distance > 0.01:
 		var to_player := offset / distance
 		if distance > attack_range * 0.78:
-			var desired := to_player * move_speed
+			var desired := to_player * speed
 			velocity.x = lerpf(velocity.x, desired.x, 1.0 - exp(-7.0 * delta))
 			velocity.z = lerpf(velocity.z, desired.z, 1.0 - exp(-7.0 * delta))
 		else:
@@ -344,7 +360,7 @@ func _physics_process(delta: float) -> void:
 		var home := _spawn_position - global_position
 		home.y = 0.0
 		if home.length() > 1.2:
-			var desired := home.normalized() * move_speed * 0.45
+			var desired := home.normalized() * speed * 0.45
 			velocity.x = lerpf(velocity.x, desired.x, 1.0 - exp(-3.0 * delta))
 			velocity.z = lerpf(velocity.z, desired.z, 1.0 - exp(-3.0 * delta))
 		else:
@@ -375,6 +391,52 @@ func _idle(delta: float) -> void:
 	_update_swing(delta)
 	_animate(delta, 999.0)
 
+## An illusion clone pulls nearby enemies off the hero for a few seconds. The
+## monster chases the decoy and swings at it, but cannot damage the real player
+## while distracted.
+func _update_distracted(delta: float) -> void:
+	var offset := _distract_point - global_position
+	offset.y = 0.0
+	var distance := offset.length()
+	var speed := move_speed * _slow_multiplier()
+	if distance > 1.45:
+		var desired := (offset / maxf(distance, 0.01)) * speed
+		velocity.x = lerpf(velocity.x, desired.x, 1.0 - exp(-7.0 * delta))
+		velocity.z = lerpf(velocity.z, desired.z, 1.0 - exp(-7.0 * delta))
+		rotation.y = lerp_angle(rotation.y, atan2(-offset.x, -offset.z), 1.0 - exp(-6.0 * delta))
+	else:
+		velocity.x = lerpf(velocity.x, 0.0, 1.0 - exp(-10.0 * delta))
+		velocity.z = lerpf(velocity.z, 0.0, 1.0 - exp(-10.0 * delta))
+		if _swing <= 0.0 and _attack_cooldown <= 0.0:
+			_swing = 0.44
+			_attack_cooldown = attack_interval
+	if not _wisp:
+		velocity.y = -20.0
+	else:
+		velocity.y = 0.0
+	move_and_slide()
+	if _wisp:
+		global_position.y = _spawn_position.y
+	_update_swing(delta)
+	_animate(delta, distance)
+
+func _update_status(delta: float) -> void:
+	if _slow_time > 0.0:
+		_slow_time = maxf(0.0, _slow_time - delta)
+		if _slow_time <= 0.0:
+			_slow_factor = 1.0
+	if _distract_time > 0.0:
+		_distract_time = maxf(0.0, _distract_time - delta)
+	if _poison_time > 0.0:
+		_poison_time = maxf(0.0, _poison_time - delta)
+		_poison_tick -= delta
+		if _poison_tick <= 0.0:
+			_poison_tick = 1.0
+			take_damage(_poison_dps, _poison_source)
+
+func _slow_multiplier() -> float:
+	return _slow_factor if _slow_time > 0.0 else 1.0
+
 func _begin_attack() -> void:
 	_attack_cooldown = attack_interval
 	_swing = 0.44
@@ -389,6 +451,8 @@ func _update_swing(delta: float) -> void:
 		_deliver_attack()
 
 func _deliver_attack() -> void:
+	if _distract_time > 0.0:
+		return
 	if _player == null or not is_instance_valid(_player):
 		return
 	var offset := _player.global_position - global_position
@@ -510,6 +574,34 @@ func take_damage(amount: float, hit_position := Vector3.ZERO) -> void:
 	_update_health_bar()
 	if health <= 0.0:
 		_die()
+
+## Ice Lance calls this. A stronger slow wins, and a fresh hit extends the
+## duration without stacking the multiplier lower and lower.
+func apply_slow(factor: float, duration: float) -> void:
+	if _dead:
+		return
+	_slow_factor = minf(_slow_factor, clampf(factor, 0.05, 1.0))
+	_slow_time = maxf(_slow_time, duration)
+
+## Poison Blade calls this. Damage is dealt in one-second ticks so the target
+## keeps losing health after the blade has already left.
+func apply_poison(damage_per_second: float, duration: float, source := Vector3.ZERO) -> void:
+	if _dead or damage_per_second <= 0.0 or duration <= 0.0:
+		return
+	_poison_dps = maxf(_poison_dps, damage_per_second)
+	_poison_time = maxf(_poison_time, duration)
+	_poison_source = source if source != Vector3.ZERO else global_position
+	_poison_tick = minf(_poison_tick, 0.35)
+	if _poison_tick <= 0.0:
+		_poison_tick = 0.35
+
+## Illusion Clone calls this to pull aggro onto the decoy.
+func distract(point: Vector3, duration: float) -> void:
+	if _dead:
+		return
+	_distract_time = maxf(_distract_time, duration)
+	_distract_point = point
+	_attack_cooldown = maxf(_attack_cooldown, 0.25)
 
 func awaken() -> void:
 	if not dormant:

@@ -495,6 +495,16 @@ var _dash_direction := Vector3.ZERO
 var _guard_time := 0.0
 var _wisp_power := 12.0
 
+## Spirit Orbs outlive the short cast that summons them, so they keep their own
+## little orbit rig and fire on a timer.
+var _orb_root: Node3D
+var _orb_nodes: Array[Node3D] = []
+var _orb_life := 0.0
+var _orb_timer := 0.0
+var _orb_gap := 0.55
+var _orb_power := 14.0
+var _orb_index := 0
+
 ## The HUD projects the mouse onto the ground and feeds the point here. The hero
 ## turns to it while standing still, so the centre box reticle and the character
 ## always agree about which way is "forward".
@@ -514,6 +524,14 @@ var _combat_nodes := {}
 var _torch_on := false
 var _interaction_target: Node3D
 var _interaction_scan := 0.0
+var _camera_yaw := 0.0
+
+func set_camera_yaw(yaw: float) -> void:
+	_camera_yaw = yaw
+	if not _attack_active and not _skill_active and _dash_time <= 0.0 and movement_locked == false:
+		var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		if input.length_squared() < 0.001:
+			rotation.y = _camera_yaw
 
 func _ready() -> void:
 	_upper_leg_length = absf(_left_knee.position.y)
@@ -617,12 +635,10 @@ func _physics_process(delta: float) -> void:
 		global_position = _spawn_position
 		velocity = Vector3.ZERO
 
-	if has_input and not _attack_active and not _skill_active and _dash_time <= 0.0:
-		var target_yaw := atan2(-move_direction.x, -move_direction.z)
-		rotation.y = lerp_angle(rotation.y, target_yaw, 1.0 - exp(-turn_speed * delta))
-	elif _aim_facing and _has_aim and not _attack_active and not _skill_active and _dash_time <= 0.0:
-		# Standing still, the hero mirrors the reticle: the box points at the
-		# mouse, and the body quietly turns to match it.
+	if not _attack_active and not _skill_active and _dash_time <= 0.0 and not movement_locked:
+		# Character faces camera direction during gameplay
+		rotation.y = lerp_angle(rotation.y, _camera_yaw, 1.0 - exp(-turn_speed * delta))
+	elif _aim_facing and _has_aim and not _attack_active and not _skill_active and _dash_time <= 0.0 and not has_input:
 		_turn_toward_aim(delta)
 
 	if _torch_on:
@@ -643,6 +659,8 @@ func _camera_relative_direction(input: Vector2) -> Vector3:
 	cam_forward.y = 0.0
 	var cam_right := cam_basis.x
 	cam_right.y = 0.0
+	cam_forward = cam_forward.normalized()
+	cam_right = cam_right.normalized()
 	return cam_right * input.x + cam_forward * -input.y
 
 func _scan_interactions(delta: float) -> void:
@@ -780,10 +798,22 @@ func perform_skill(skill_id: String) -> bool:
 	_skill_data = data
 	_event_flags.clear()
 	_face_aim_point()
-	match str(data.get("effect", "")):
+	var effect := str(data.get("effect", ""))
+	match effect:
 		"dash":
 			_dash_direction = _aim_direction()
 			_dash_time = _skill_duration * 0.58
+		"dash_strike", "fox_dash", "shadow_dash":
+			_dash_direction = _aim_direction()
+			if effect == "shadow_dash":
+				var victim := _find_nearest_dummy(12.0)
+				if victim != null:
+					var to_victim := victim.global_position - global_position
+					to_victim.y = 0.0
+					if to_victim.length_squared() > 0.04:
+						_dash_direction = to_victim.normalized()
+			rotation.y = atan2(-_dash_direction.x, -_dash_direction.z)
+			_dash_time = _skill_duration * (0.52 if effect == "shadow_dash" else 0.42)
 		"guard":
 			_guard_time = GUARD_DURATION
 	skill_started.emit(skill_id)

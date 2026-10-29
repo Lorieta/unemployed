@@ -5,6 +5,7 @@ extends Control
 ## items, and a live armory. The armory is the only place weapons are equipped;
 ## clicking a weapon here draws the same blade the journal and combat use.
 
+signal opened
 signal closed
 signal weapon_selected(weapon_id: String)
 signal offhand_selected(offhand_id: String)
@@ -126,11 +127,14 @@ func toggle() -> void:
 		open()
 
 func open() -> void:
+	if visible:
+		return
 	_kill_tween()
 	visible = true
 	modulate = Color(1.0, 1.0, 1.0, 0.0)
 	_tween = create_tween()
 	_tween.tween_property(self, "modulate:a", 1.0, 0.16)
+	opened.emit()
 
 func close() -> void:
 	if not visible:

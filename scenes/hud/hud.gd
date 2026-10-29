@@ -173,6 +173,7 @@ var _zone_timer := 0.0
 var _falling := false
 
 func _ready() -> void:
+	add_to_group("hud")
 	_build_slot_data()
 	_build_quickbar()
 	_build_buttons()
@@ -185,6 +186,7 @@ func _ready() -> void:
 	_toast.modulate.a = 0.0
 	_prompt.visible = false
 	_inventory.closed.connect(_on_inventory_closed)
+	_inventory.opened.connect(_on_cursor_panel_opened)
 	_inventory.weapon_selected.connect(_on_inventory_weapon_selected)
 	_inventory.offhand_selected.connect(_on_inventory_offhand_selected)
 	if _inventory.has_signal("item_used"):
@@ -194,6 +196,13 @@ func _ready() -> void:
 	_refresh_quest_markers()
 	_boss_bar.visible = false
 	_zone_banner.modulate.a = 0.0
+	_update_cursor_state()
+
+## Leaving gameplay must never strand the player with a captured, invisible
+## pointer (title screen, scene reload, or quit).
+func _exit_tree() -> void:
+	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 func _build_slot_data() -> void:
 	_slot_data.clear()
@@ -259,6 +268,7 @@ func _build_overlays() -> void:
 	_overlays.append(_pause)
 	for panel in _overlays:
 		$Root.add_child(panel)
+		panel.opened.connect(_on_cursor_panel_opened)
 		panel.closed.connect(_on_overlay_closed)
 	_shop.connect("purchase_requested", _on_shop_purchase)
 	_settings.hints_toggled.connect(_on_hints_toggled)
@@ -321,15 +331,93 @@ func _unhandled_input(event: InputEvent) -> void:
 			if not _input_blocked():
 				_attack_with_equipped()
 				get_viewport().set_input_as_handled()
-			if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
-				if mouse_event.pressed and not _input_blocked():
+			return
+		if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
+			if not _input_blocked():
+				if mouse_event.pressed:
 					_orbit_camera = true
-					get_viewport().set_input_as_handled()
-				return
-				if not mouse_event.pressed:
+				else:
 					_orbit_camera = false
+			get_viewport().set_input_as_handled()
+			return
+		return
+
+	if event is InputEventKey and event.pressed:
+		if not _input_blocked():
+			match event.keycode:
+				KEY_1:
+					_activate_slot(0)
 					get_viewport().set_input_as_handled()
-				return
+					return
+				KEY_2:
+					_activate_slot(1)
+					get_viewport().set_input_as_handled()
+					return
+				KEY_3:
+					_activate_slot(2)
+					get_viewport().set_input_as_handled()
+					return
+				KEY_4:
+					_activate_slot(3)
+					get_viewport().set_input_as_handled()
+					return
+				KEY_5:
+					_activate_slot(4)
+					get_viewport().set_input_as_handled()
+					return
+				KEY_6:
+					_activate_slot(5)
+					get_viewport().set_input_as_handled()
+					return
+				KEY_7:
+					_activate_slot(6)
+					get_viewport().set_input_as_handled()
+					return
+				KEY_8:
+					_activate_slot(7)
+					get_viewport().set_input_as_handled()
+					return
+				KEY_9:
+					_activate_slot(8)
+					get_viewport().set_input_as_handled()
+					return
+				KEY_0:
+					_activate_slot(9)
+					get_viewport().set_input_as_handled()
+					return
+				KEY_E:
+					_interact()
+					get_viewport().set_input_as_handled()
+					return
+				KEY_I:
+					_toggle_inventory()
+					get_viewport().set_input_as_handled()
+					return
+				KEY_J:
+					_show_journal()
+					get_viewport().set_input_as_handled()
+					return
+				KEY_K:
+					_show_skills()
+					get_viewport().set_input_as_handled()
+					return
+				KEY_M:
+					_show_map()
+					get_viewport().set_input_as_handled()
+					return
+				KEY_SPACE:
+					if not _input_blocked():
+						_attack_with_equipped()
+						get_viewport().set_input_as_handled()
+					return
+
+		if event.is_action_pressed("ui_cancel"):
+			if not _any_overlay_open():
+				_toggle_pause()
+			else:
+				_close_overlays()
+				_inventory.close()
+			get_viewport().set_input_as_handled()
 			return
 		return
 
@@ -345,16 +433,31 @@ func _unhandled_input(event: InputEvent) -> void:
 func _toggle_pause() -> void:
 	if _pause.visible:
 		_pause.close_panel()
+		call_deferred("_update_cursor_state")
 		return
 	if _input_blocked():
 		return
 	_open_overlay(_pause)
 	get_tree().paused = true
 
+## Single source of truth for the pointer. Gameplay uses a captured, hidden
+## cursor for camera look; UI uses the engine's free visible cursor so it moves
+## wherever the player points. Capturing is decided only after every panel is
+## closed, so opening one panel can never hand the pointer back to the camera.
+func _update_cursor_state() -> void:
+	var capture := not _input_blocked()
+	var desired := Input.MOUSE_MODE_CAPTURED if capture else Input.MOUSE_MODE_VISIBLE
+	if Input.get_mouse_mode() != desired:
+		Input.set_mouse_mode(desired)
+
+func _on_cursor_panel_opened() -> void:
+	_update_cursor_state()
+
 ## The pause panel closes itself on ESC or the close button while the tree is
 ## paused (it runs with PROCESS_MODE_ALWAYS), so unpausing lives on `closed`.
 func _on_pause_closed() -> void:
 	get_tree().paused = false
+	call_deferred("_update_cursor_state")
 
 func _on_pause_settings() -> void:
 	# Unpause first: the settings panel and HUD freeze while the tree pauses.
@@ -468,6 +571,10 @@ func _cast_skill(skill_id: String) -> bool:
 
 func _show_skills() -> void:
 	if _skill_list == null:
+		return
+	if _skill_list.visible:
+		_skill_list.close_panel()
+		call_deferred("_update_cursor_state")
 		return
 	if _inventory.visible:
 		_inventory.close()
@@ -635,6 +742,7 @@ func _heal(amount: float) -> void:
 func _toggle_inventory() -> void:
 	if _inventory.visible:
 		_inventory.close()
+		call_deferred("_update_cursor_state")
 		return
 	_hide_overlays_immediately()
 	_inventory.open()
@@ -642,9 +750,11 @@ func _toggle_inventory() -> void:
 	_inventory.set_equipped_offhand(str(_player.get("equipped_offhand")) if _player != null else "shield")
 	_sync_world_lock()
 	_prompt.visible = false
+	_update_cursor_state()
 
 func _on_inventory_closed() -> void:
 	_sync_world_lock()
+	call_deferred("_update_cursor_state")
 
 func _on_inventory_weapon_selected(weapon_id: String) -> void:
 	if _player == null:
@@ -727,6 +837,7 @@ func _on_inventory_item_used(item_id: String) -> void:
 func _show_journal() -> void:
 	if _journal.visible:
 		_journal.close_panel()
+		call_deferred("_update_cursor_state")
 		return
 	_refresh_journal()
 	_open_overlay(_journal)
@@ -749,10 +860,15 @@ func _story_snapshot() -> Dictionary:
 func _show_map() -> void:
 	if _map.visible:
 		_map.close_panel()
+		call_deferred("_update_cursor_state")
 		return
 	_open_overlay(_map)
 
 func _show_settings() -> void:
+	if _settings.visible:
+		_settings.close_panel()
+		call_deferred("_update_cursor_state")
+		return
 	_settings.set_hints_enabled(_hint_panel.visible)
 	_settings.set_vignette_enabled(_vignette.visible)
 	_open_overlay(_settings)
@@ -766,11 +882,13 @@ func _open_overlay(panel: OverlayPanel) -> void:
 	panel.open()
 	_sync_world_lock()
 	_prompt.visible = false
+	_update_cursor_state()
 
 func _close_overlays() -> void:
 	for panel in _overlays:
 		if panel.visible:
 			panel.close_panel()
+	call_deferred("_update_cursor_state")
 
 func _hide_overlays_immediately() -> void:
 	for panel in _overlays:
@@ -779,15 +897,23 @@ func _hide_overlays_immediately() -> void:
 
 func _on_overlay_closed() -> void:
 	_sync_world_lock()
+	call_deferred("_update_cursor_state")
 
 func _any_overlay_open() -> bool:
+	if _overlays.is_empty():
+		return false
 	for panel in _overlays:
-		if panel.visible:
+		if is_instance_valid(panel) and panel.visible:
 			return true
 	return false
 
 func _input_blocked() -> bool:
-	return _any_overlay_open() or _inventory.visible
+	return _any_overlay_open() or (_inventory != null and _inventory.visible)
+
+## Public so gameplay systems (the camera, player controls) can stand down while
+## any interactive HUD window owns the pointer.
+func is_ui_active() -> bool:
+	return _input_blocked()
 
 func _sync_world_lock() -> void:
 	var blocked := _input_blocked()
@@ -1050,6 +1176,7 @@ func _open_dialogue(speaker: String, body: String, choices: Array) -> void:
 	_dialogue.present(speaker, body, choices)
 	_sync_world_lock()
 	_prompt.visible = false
+	_update_cursor_state()
 
 func _on_dialogue_choice(choice_id: String) -> void:
 	match choice_id:

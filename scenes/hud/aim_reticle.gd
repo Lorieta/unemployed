@@ -25,12 +25,12 @@ func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
 	z_index = 200
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+	# Don't force hide mouse here - let HUD manage it
 	set_process(true)
 	queue_redraw()
 
 func _exit_tree() -> void:
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	pass
 
 func set_aim_visible(active: bool) -> void:
 	_aim_enabled = active
@@ -58,9 +58,11 @@ func _resolve_world() -> void:
 func _draw() -> void:
 	if not _cursor.x > 0.0 and not _cursor.y > 0.0:
 		_cursor = get_viewport().get_mouse_position()
+	# While UI is open the real system cursor is visible, so the custom reticle
+	# steps aside instead of drawing a second pointer on top of it.
 	if _aim_enabled:
 		_draw_aim_line()
-	_draw_cursor()
+		_draw_cursor()
 
 ## Dotted line from the hero's chest to the pointer. The dots fade toward the
 ## hero so the line reads as direction rather than a hard tether.
