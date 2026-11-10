@@ -1,0 +1,99 @@
+[gd_scene load_steps=10 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Material_iron"]
+albedo_color = Color(0.27, 0.26, 0.28, 1)
+metallic = 0.8
+roughness = 0.38
+
+[sub_resource type="StandardMaterial3D" id="Material_plate"]
+albedo_color = Color(0.42, 0.36, 0.3, 1)
+metallic = 0.72
+roughness = 0.42
+
+[sub_resource type="StandardMaterial3D" id="Material_leather"]
+albedo_color = Color(0.24, 0.13, 0.07, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Material_ember"]
+albedo_color = Color(1, 0.62, 0.25, 1)
+emission_enabled = true
+emission = Color(1, 0.42, 0.09, 1)
+emission_energy_multiplier = 2.6
+roughness = 0.3
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_bracer"]
+material = SubResource("Material_iron")
+top_radius = 0.072
+bottom_radius = 0.083
+height = 0.22
+radial_segments = 9
+
+[sub_resource type="BoxMesh" id="BoxMesh_hand"]
+material = SubResource("Material_plate")
+size = Vector3(0.135, 0.12, 0.14)
+
+[sub_resource type="BoxMesh" id="BoxMesh_knuckle"]
+material = SubResource("Material_iron")
+size = Vector3(0.13, 0.045, 0.045)
+
+[sub_resource type="BoxMesh" id="BoxMesh_claw"]
+material = SubResource("Material_plate")
+size = Vector3(0.028, 0.028, 0.13)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ember"]
+material = SubResource("Material_ember")
+size = Vector3(0.016, 0.12, 0.012)
+
+[sub_resource type="BoxMesh" id="BoxMesh_band"]
+material = SubResource("Material_leather")
+size = Vector3(0.17, 0.035, 0.17)
+
+[node name="EmberweaveGauntlet" type="Node3D"]
+
+[node name="Bracer" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.09, 0.01)
+mesh = SubResource("CylinderMesh_bracer")
+
+[node name="BracerBand" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.02, 0.01)
+mesh = SubResource("BoxMesh_band")
+
+[node name="Hand" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.03, -0.06)
+mesh = SubResource("BoxMesh_hand")
+
+[node name="Knuckle" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.015, -0.132)
+mesh = SubResource("BoxMesh_knuckle")
+
+[node name="ClawLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.043, -0.045, -0.155)
+rotation = Vector3(0.12, 0, 0)
+mesh = SubResource("BoxMesh_claw")
+
+[node name="ClawCenter" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.04, -0.16)
+rotation = Vector3(0.12, 0, 0)
+mesh = SubResource("BoxMesh_claw")
+
+[node name="ClawRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.043, -0.045, -0.155)
+rotation = Vector3(0.12, 0, 0)
+mesh = SubResource("BoxMesh_claw")
+
+[node name="EmberLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.085, 0.09, -0.02)
+rotation = Vector3(0, 0, 0.12)
+mesh = SubResource("BoxMesh_ember")
+
+[node name="EmberRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.085, 0.09, -0.02)
+rotation = Vector3(0, 0, -0.12)
+mesh = SubResource("BoxMesh_ember")
+
+[node name="EmberLight" type="OmniLight3D" parent="."]
+position = Vector3(0, 0.03, -0.06)
+light_color = Color(1, 0.48, 0.18, 1)
+light_energy = 0.55
+omni_range = 1.6
+shadow_enabled = false

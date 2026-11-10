@@ -1,0 +1,170 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://scenes/player/weapons/kitsune_hover.gd" id="1_hover"]
+
+[sub_resource type="StandardMaterial3D" id="Material_core"]
+albedo_color = Color(0.64, 1, 0.94, 1)
+emission_enabled = true
+emission = Color(0.35, 1, 0.86, 1)
+emission_energy_multiplier = 3.2
+roughness = 0.15
+
+[sub_resource type="StandardMaterial3D" id="Material_glow"]
+albedo_color = Color(0.38, 0.93, 0.82, 0.28)
+transparency = 1
+shading_mode = 0
+emission_enabled = true
+emission = Color(0.3, 0.95, 0.82, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="StandardMaterial3D" id="Material_gold"]
+albedo_color = Color(0.95, 0.82, 0.45, 1)
+emission_enabled = true
+emission = Color(0.75, 0.55, 0.22, 1)
+emission_energy_multiplier = 0.8
+metallic = 0.6
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Material_tail"]
+albedo_color = Color(0.78, 1, 0.94, 0.72)
+transparency = 1
+shading_mode = 0
+emission_enabled = true
+emission = Color(0.42, 1, 0.88, 1)
+emission_energy_multiplier = 1.8
+roughness = 0.2
+
+[sub_resource type="SphereMesh" id="SphereMesh_core"]
+material = SubResource("Material_core")
+radius = 0.085
+height = 0.17
+radial_segments = 12
+rings = 8
+
+[sub_resource type="SphereMesh" id="SphereMesh_glow"]
+material = SubResource("Material_glow")
+radius = 0.145
+height = 0.29
+radial_segments = 12
+rings = 8
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+material = SubResource("Material_gold")
+inner_radius = 0.12
+outer_radius = 0.15
+rings = 16
+ring_segments = 6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ear"]
+material = SubResource("Material_core")
+top_radius = 0.0
+bottom_radius = 0.045
+height = 0.12
+radial_segments = 6
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tail"]
+material = SubResource("Material_tail")
+top_radius = 0.008
+bottom_radius = 0.03
+height = 0.26
+radial_segments = 6
+
+[sub_resource type="SphereMesh" id="SphereMesh_tail_tip"]
+material = SubResource("Material_tail")
+radius = 0.022
+height = 0.044
+radial_segments = 6
+rings = 4
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye"]
+material = SubResource("Material_gold")
+radius = 0.012
+height = 0.024
+radial_segments = 6
+rings = 4
+
+[node name="Kitsune" type="Node3D"]
+script = ExtResource("1_hover")
+
+[node name="Glow" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_glow")
+cast_shadow = 0
+
+[node name="Core" type="Node3D" parent="."]
+
+[node name="Orb" type="MeshInstance3D" parent="Core"]
+mesh = SubResource("SphereMesh_core")
+cast_shadow = 0
+
+[node name="EarLeft" type="MeshInstance3D" parent="Core"]
+position = Vector3(-0.052, 0.086, 0)
+rotation = Vector3(0, 0, -0.28)
+mesh = SubResource("CylinderMesh_ear")
+cast_shadow = 0
+
+[node name="EarRight" type="MeshInstance3D" parent="Core"]
+position = Vector3(0.052, 0.086, 0)
+rotation = Vector3(0, 0, 0.28)
+mesh = SubResource("CylinderMesh_ear")
+cast_shadow = 0
+
+[node name="EyeLeft" type="MeshInstance3D" parent="Core"]
+position = Vector3(-0.033, 0.014, -0.074)
+mesh = SubResource("SphereMesh_eye")
+cast_shadow = 0
+
+[node name="EyeRight" type="MeshInstance3D" parent="Core"]
+position = Vector3(0.033, 0.014, -0.074)
+mesh = SubResource("SphereMesh_eye")
+cast_shadow = 0
+
+[node name="RingA" type="MeshInstance3D" parent="."]
+rotation = Vector3(0.4, 0, 0)
+mesh = SubResource("TorusMesh_ring")
+cast_shadow = 0
+
+[node name="RingB" type="MeshInstance3D" parent="."]
+rotation = Vector3(-0.7, 0.6, 0)
+mesh = SubResource("TorusMesh_ring")
+cast_shadow = 0
+
+[node name="Tails" type="Node3D" parent="."]
+
+[node name="TailLeft" type="MeshInstance3D" parent="Tails"]
+position = Vector3(-0.115, -0.04, 0.1)
+rotation = Vector3(0.9, 0.4, -0.55)
+mesh = SubResource("CylinderMesh_tail")
+cast_shadow = 0
+
+[node name="TailLeftTip" type="MeshInstance3D" parent="Tails"]
+position = Vector3(-0.2, -0.02, 0.22)
+mesh = SubResource("SphereMesh_tail_tip")
+cast_shadow = 0
+
+[node name="TailMid" type="MeshInstance3D" parent="Tails"]
+position = Vector3(0, -0.06, 0.12)
+rotation = Vector3(1.05, 0, 0)
+mesh = SubResource("CylinderMesh_tail")
+cast_shadow = 0
+
+[node name="TailMidTip" type="MeshInstance3D" parent="Tails"]
+position = Vector3(0, -0.02, 0.26)
+mesh = SubResource("SphereMesh_tail_tip")
+cast_shadow = 0
+
+[node name="TailRight" type="MeshInstance3D" parent="Tails"]
+position = Vector3(0.115, -0.04, 0.1)
+rotation = Vector3(0.9, -0.4, 0.55)
+mesh = SubResource("CylinderMesh_tail")
+cast_shadow = 0
+
+[node name="TailRightTip" type="MeshInstance3D" parent="Tails"]
+position = Vector3(0.2, -0.02, 0.22)
+mesh = SubResource("SphereMesh_tail_tip")
+cast_shadow = 0
+
+[node name="SpiritLight" type="OmniLight3D" parent="."]
+light_color = Color(0.42, 1, 0.88, 1)
+light_energy = 0.9
+omni_range = 2.6
+shadow_enabled = false
