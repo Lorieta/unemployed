@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/monster.tscn" id="9_monster"]
 [ext_resource type="PackedScene" path="res://scenes/world/shrine.tscn" id="10_shrine"]
 [ext_resource type="Script" uid="uid://6tux7fnf2qu5" path="res://scenes/world/world_builder.gd" id="11_builder"]
+[ext_resource type="Script" path="res://scripts/dungeon/dungeon_manager.gd" id="12_dungeon"]
 
 [sub_resource type="Environment" id="Environment_reach"]
 background_mode = 1
@@ -42,7 +43,8 @@ shader_parameter/pattern_fade_end = 60.0
 material = SubResource("ShaderMaterial_ground")
 size = Vector2(220, 220)
 
-[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_ground"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(240, 1.2, 240)
 
 [node name="VerdantReach" type="Node3D" unique_id=871306641]
 
@@ -64,11 +66,12 @@ light_energy = 0.42
 [node name="Ground" type="StaticBody3D" parent="." unique_id=132241023]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=2027621768]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.13129234, 9.536743e-07, -0.07172394)
+transform = Transform3D(0.9999993, -0.0006492388, -0.0010427228, 0.0006474982, 0.9999984, -0.0016676221, 0.0010438046, 0.0016669453, 0.9999981, 0.13129234, 9.536743e-07, -0.07172394)
 mesh = SubResource("PlaneMesh_ground")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=778547433]
-shape = SubResource("WorldBoundaryShape3D_ground")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
+shape = SubResource("BoxShape3D_ground")
 
 [node name="World" type="Node3D" parent="." unique_id=1992351722]
 script = ExtResource("11_builder")
@@ -321,6 +324,11 @@ fov = 40.0
 far = 160.0
 script = ExtResource("2_camera")
 target_path = NodePath("../Human")
-offset = Vector3(-2.8, 2.7, 4.6)
 
 [node name="HUD" parent="." unique_id=1244916051 instance=ExtResource("4_hud")]
+
+[node name="DungeonManager" type="Node3D" parent="."]
+script = ExtResource("12_dungeon")
+auto_start = false
+embedded_in_world = true
+vertical_offset = -120.0

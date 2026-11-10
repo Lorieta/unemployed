@@ -6,10 +6,12 @@ extends Node3D
 ## readable and the town can be re-dressed by changing a few numbers.
 
 const TREE := preload("res://scenes/demo/low_poly_tree.tscn")
+const ENTRANCE_SCRIPT := preload("res://scenes/world/dungeon_entrance.gd")
 
 const TOWN_CENTER := Vector3(0.0, 0.0, 4.0)
 const GATE_Z := -30.0
 const SHRINE_POSITION := Vector3(-6.0, 0.0, -74.0)
+const DUNGEON_ENTRANCE_POSITION := Vector3(-13.5, 0.0, -79.5)
 
 var _materials := {}
 var _rng := RandomNumberGenerator.new()
@@ -24,6 +26,7 @@ func _ready() -> void:
 	_build_gate()
 	_build_town_dressing()
 	_build_field()
+	_build_dungeon_entrance()
 	_build_boundaries()
 
 # ---------------------------------------------------------------------------
@@ -326,6 +329,13 @@ func _build_field() -> void:
 	_mesh(root, "box", wreck + Vector3(0.0, 0.65, 0.0), Vector3(2.4, 0.16, 1.4), bark).rotation.z = 0.18
 	_mesh(root, "cylinder", wreck + Vector3(0.7, 0.45, 0.7), Vector3(0.4, 0.4, 0.1), bark_light).rotation.x = PI * 0.5
 	_bramble(root, wreck + Vector3(1.2, 0.0, -0.6), 1.2, bark, thorn, moss)
+
+func _build_dungeon_entrance() -> void:
+	var entrance := StaticBody3D.new()
+	entrance.name = "DungeonEntrance"
+	entrance.set_script(ENTRANCE_SCRIPT)
+	add_child(entrance)
+	entrance.position = DUNGEON_ENTRANCE_POSITION
 
 func _near_field_path(x: float, z: float) -> bool:
 	if z > -88.0 and absf(x - (z + 30.0) * 0.136) < 4.8:

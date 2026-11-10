@@ -1,0 +1,45 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/dungeon_manager.gd" id="1_manager"]
+[ext_resource type="PackedScene" path="res://scenes/player/tiny_human.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scenes/demo/follow_camera.gd" id="3_camera"]
+[ext_resource type="PackedScene" path="res://scenes/hud/hud.tscn" id="4_hud"]
+
+[sub_resource type="Environment" id="Environment_dungeon"]
+background_mode = 1
+background_color = Color(0.008, 0.008, 0.014, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.14, 0.15, 0.18, 1)
+ambient_light_energy = 0.42
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.6
+glow_bloom = 0.08
+fog_enabled = true
+fog_light_color = Color(0.02, 0.024, 0.03, 1)
+fog_density = 0.03
+
+[node name="Dungeon" type="Node3D"]
+script = ExtResource("1_manager")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_dungeon")
+
+[node name="Ambient" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.8776, 0, -0.4794, -0.35996, 0.66, -0.6589, 0.31641, 0.751, 0.5792, 0, 26, 0)
+light_color = Color(0.6, 0.68, 0.85, 1)
+light_energy = 0.22
+shadow_enabled = false
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="Camera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 7.5)
+current = true
+fov = 50.0
+far = 90.0
+script = ExtResource("3_camera")
+target_path = NodePath("../Player")
+
+[node name="HUD" parent="." instance=ExtResource("4_hud")]

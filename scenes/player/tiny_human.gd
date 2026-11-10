@@ -39,6 +39,10 @@ signal interaction_changed(prompt: String)
 @export_group("Combat")
 @export var interaction_range := 2.6
 
+## The dungeon floors run far below y = 0, so the fall rescue must stand down
+## while the hero is inside. The dungeon manager flips this on entry and exit.
+@export var allow_fall_rescue := true
+
 const PROJECTILE := preload("res://scenes/player/weapons/projectile.gd")
 const SHOCKWAVE := preload("res://scenes/player/weapons/shockwave.gd")
 const SKILL_LIBRARY := preload("res://scenes/hud/skill_library.gd")
@@ -631,7 +635,7 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	if global_position.y < -5.0:
+	if allow_fall_rescue and global_position.y < -5.0:
 		global_position = _spawn_position
 		velocity = Vector3.ZERO
 
@@ -2111,6 +2115,10 @@ func is_torch_on() -> bool:
 	return _torch_on
 
 func return_to_spawn() -> void:
+	var manager := get_tree().get_first_node_in_group("dungeon_manager")
+	if manager != null and bool(manager.call("is_inside_dungeon")):
+		allow_fall_rescue = true
+		manager.call("exit_dungeon")
 	global_position = _spawn_position
 	rotation.y = _spawn_rotation
 	velocity = Vector3.ZERO
