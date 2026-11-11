@@ -498,6 +498,7 @@ var _dash_time := 0.0
 var _dash_direction := Vector3.ZERO
 var _guard_time := 0.0
 var _wisp_power := 12.0
+var _wisp_gap := 0.09
 
 ## Spirit Orbs outlive the short cast that summons them, so they keep their own
 ## little orbit rig and fire on a timer.
@@ -603,6 +604,7 @@ func _physics_process(delta: float) -> void:
 	_update_attack(delta)
 	_update_skill(delta)
 	_update_wisps(delta)
+	_update_orbs(delta)
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if movement_locked:
@@ -807,6 +809,7 @@ func perform_skill(skill_id: String) -> bool:
 		"dash":
 			_dash_direction = _aim_direction()
 			_dash_time = _skill_duration * 0.58
+			_spawn_speed_lines()
 		"dash_strike", "fox_dash", "shadow_dash":
 			_dash_direction = _aim_direction()
 			if effect == "shadow_dash":
@@ -818,8 +821,10 @@ func perform_skill(skill_id: String) -> bool:
 						_dash_direction = to_victim.normalized()
 			rotation.y = atan2(-_dash_direction.x, -_dash_direction.z)
 			_dash_time = _skill_duration * (0.52 if effect == "shadow_dash" else 0.42)
+			_spawn_speed_lines()
 		"guard":
 			_guard_time = GUARD_DURATION
+			_spawn_ward_ring(_skill_color(Color(0.7, 0.8, 0.95, 1.0)), GUARD_DURATION)
 	skill_started.emit(skill_id)
 	return true
 
@@ -863,6 +868,7 @@ func _trigger_skill_event(t: float) -> void:
 			for i in hits:
 				if t >= first + gap * float(i) and _once("skill_hit_%d" % i):
 					_melee_strike(reach, damage, min_dot)
+					_spawn_arc_slash(_skill_color(), reach * 0.85, 0.3, 105.0)
 		"shockwave":
 			var hit_time := float(_skill_data.get("hit_time", 0.5))
 			if t >= hit_time and _once("skill_wave"):
@@ -887,7 +893,149 @@ func _trigger_skill_event(t: float) -> void:
 			if t >= float(_skill_data.get("release_time", 0.3)) and _once("skill_wisps"):
 				_wisp_remaining = maxi(1, int(_skill_data.get("count", 3)))
 				_wisp_timer = 0.0
+				_wisp_gap = 0.09
 				_wisp_power = float(_skill_data.get("damage", 18.0))
+		"whirlwind":
+			# A spinning ring: every hit reaches all the way around the hero.
+			var hits := maxi(1, int(_skill_data.get("hits", 2)))
+			var first := float(_skill_data.get("hit_time", 0.28))
+			var gap := float(_skill_data.get("hit_gap", 0.30))
+			var radius := float(_skill_data.get("radius", 3.15))
+			var damage := float(_skill_data.get("damage", 28.0))
+			for i in hits:
+				if t >= first + gap * float(i) and _once("skill_whirl_%d" % i):
+					_melee_strike(radius, damage, -1.0)
+					_spawn_arc_slash(_skill_color(), radius, 0.42, 360.0)
+					_spawn_shockwave(Color(0.95, 0.88, 0.62, 0.8), radius, 0.45)
+		"dash_strike", "shadow_dash":
+			# The dash carries the cut: the strike lands mid-lunge.
+			var hit_time := float(_skill_data.get("hit_time", 0.28))
+			if t >= hit_time and _once("skill_dash_hit"):
+				_melee_strike(
+					float(_skill_data.get("reach", 2.9)),
+					float(_skill_data.get("damage", 40.0)),
+					float(_skill_data.get("min_dot", 0.0))
+				)
+				_spawn_arc_slash(_skill_color(), float(_skill_data.get("reach", 2.9)) * 0.85, 0.26, 130.0)
+		"wave":
+			if t >= float(_skill_data.get("release_time", 0.30)) and _once("skill_wave_shot"):
+				_fire_projectile("wave", float(_skill_data.get("damage", 38.0)))
+		"line":
+			# Earth Splitter: a committed furrow straight ahead.
+			var hit_time := float(_skill_data.get("hit_time", 0.52))
+			if t >= hit_time and _once("skill_line"):
+				_line_strike(
+					float(_skill_data.get("length", 8.0)),
+					float(_skill_data.get("width", 1.9)),
+					float(_skill_data.get("damage", 54.0))
+				)
+				_spawn_dust_burst(float(_skill_data.get("length", 8.0)), float(_skill_data.get("width", 1.9)))
+		"rain":
+			# Loosed high: each arrow lands somewhere on the marked ground.
+			var count := maxi(1, int(_skill_data.get("count", 7)))
+			var first := float(_skill_data.get("first_shot", 0.44))
+			var gap := float(_skill_data.get("shot_gap", 0.075))
+			for i in count:
+				if t >= first + gap * float(i) and _once("skill_rain_%d" % i):
+					_fire_projectile("rain_arrow", float(_skill_data.get("damage", 17.0)), _rain_direction())
+		"multishot":
+			if t >= float(_skill_data.get("release_time", 0.46)) and _once("skill_multishot"):
+				var count := maxi(1, int(_skill_data.get("count", 5)))
+				var spread := float(_skill_data.get("spread", 0.17))
+				var damage := float(_skill_data.get("damage", 20.0))
+				for i in count:
+					var fan := (float(i) - float(count - 1) * 0.5) * spread
+					_fire_projectile("arrow", damage, _aim_direction().rotated(Vector3.UP, fan))
+		"piercing":
+			if t >= float(_skill_data.get("release_time", 0.55)) and _once("skill_pierce"):
+				_fire_projectile("arrow", float(_skill_data.get("damage", 46.0)), Vector3.ZERO,
+					{"pierce": maxi(1, int(_skill_data.get("pierce", 4)))})
+		"explosive":
+			if t >= float(_skill_data.get("release_time", 0.56)) and _once("skill_explosive"):
+				_fire_projectile("arrow", float(_skill_data.get("damage", 34.0)), Vector3.ZERO, {
+					"explode_radius": float(_skill_data.get("radius", 3.0)),
+					"explode_damage": float(_skill_data.get("blast_damage", 30.0)),
+				})
+		"fireball":
+			if t >= float(_skill_data.get("release_time", 0.48)) and _once("skill_fireball"):
+				_fire_projectile("fireball", float(_skill_data.get("damage", 32.0)), Vector3.ZERO, {
+					"explode_radius": float(_skill_data.get("radius", 2.8)),
+					"explode_damage": float(_skill_data.get("blast_damage", 28.0)),
+				}, Color(1.0, 0.52, 0.18, 1.0))
+		"ice_lance":
+			if t >= float(_skill_data.get("release_time", 0.46)) and _once("skill_ice"):
+				_fire_projectile("ice_lance", float(_skill_data.get("damage", 34.0)), Vector3.ZERO, {
+					"slow": float(_skill_data.get("slow", 0.45)),
+					"slow_duration": float(_skill_data.get("slow_duration", 3.0)),
+				}, Color(0.55, 0.82, 1.0, 1.0))
+		"lightning":
+			# Marked ground; the storm answers after a short call.
+			if _once("skill_lightning_call"):
+				var point := _aim_point
+				var damage := float(_skill_data.get("damage", 48.0))
+				var radius := float(_skill_data.get("radius", 2.8))
+				var delay := float(_skill_data.get("delay", 0.38))
+				_spawn_ground_mark(point, radius, delay + 0.15)
+				get_tree().create_timer(delay).timeout.connect(func() -> void:
+					if is_inside_tree():
+						_lightning_strike(point, damage, radius)
+				)
+		"arcane":
+			var hit_time := float(_skill_data.get("hit_time", 0.40))
+			if t >= hit_time and _once("skill_arcane"):
+				var radius := float(_skill_data.get("radius", 3.6))
+				_melee_strike(radius, float(_skill_data.get("damage", 40.0)), -1.0)
+				_spawn_shockwave(Color(0.72, 0.5, 0.98, 0.9), radius, 0.6)
+		"fan":
+			if t >= float(_skill_data.get("release_time", 0.28)) and _once("skill_fan"):
+				var count := maxi(1, int(_skill_data.get("count", 5)))
+				var spread := float(_skill_data.get("spread", 0.21))
+				var damage := float(_skill_data.get("damage", 17.0))
+				for i in count:
+					var fan := (float(i) - float(count - 1) * 0.5) * spread
+					_fire_projectile("dagger", damage, _aim_direction().rotated(Vector3.UP, fan), {}, Color(0.85, 0.88, 0.95, 1.0))
+		"poison":
+			var hit_time := float(_skill_data.get("hit_time", 0.24))
+			if t >= hit_time and _once("skill_poison_hit"):
+				_melee_strike(
+					float(_skill_data.get("reach", 2.6)),
+					float(_skill_data.get("damage", 18.0)),
+					float(_skill_data.get("min_dot", 0.0)),
+					float(_skill_data.get("poison_damage", 8.0)),
+					float(_skill_data.get("poison_duration", 6.0))
+				)
+				_spawn_arc_slash(Color(0.45, 0.85, 0.4, 0.9), float(_skill_data.get("reach", 2.6)) * 0.85, 0.26, 120.0)
+				_spawn_shockwave(Color(0.4, 0.85, 0.35, 0.6), float(_skill_data.get("reach", 2.6)) * 0.6, 0.3)
+		"foxfire_bolt":
+			if t >= float(_skill_data.get("release_time", 0.34)) and _once("skill_foxbolt"):
+				_fire_projectile("wisp", float(_skill_data.get("damage", 36.0)), Vector3.ZERO, {}, Color(1.0, 0.62, 0.3, 1.0))
+		"clone":
+			if t >= float(_skill_data.get("release_time", 0.4)) and _once("skill_clone"):
+				_spawn_clone(
+					float(_skill_data.get("clone_duration", 5.0)),
+					float(_skill_data.get("radius", 8.0))
+				)
+		"orbs":
+			if t >= 0.3 and _once("skill_orbs"):
+				_spawn_orbs(
+					float(_skill_data.get("count", 3)),
+					float(_skill_data.get("damage", 14.0)),
+					float(_skill_data.get("orb_interval", 0.55)),
+					float(_skill_data.get("orb_duration", 5.0))
+				)
+		"heal":
+			# The HUD applies the vitals; the visuals live here so the mend has
+			# a body: green motes climbing out of the ground.
+			if _once("skill_motes"):
+				_spawn_motes(Color(0.55, 0.95, 0.55, 1.0), 10, 0.9, "rise")
+		"mana":
+			# Focus: blue motes drift down and settle into the chest.
+			if _once("skill_motes"):
+				_spawn_motes(Color(0.5, 0.75, 1.0, 1.0), 10, 0.9, "converge")
+		"recall":
+			# Returning to the well: a column of gold light around the hero.
+			if _once("skill_recall_fx"):
+				_spawn_recall_beam()
 
 func is_skill_active() -> bool:
 	return _skill_active
@@ -1002,12 +1150,35 @@ func _update_wisps(delta: float) -> void:
 	if _wisp_timer > 0.0:
 		return
 	_wisp_remaining -= 1
-	_wisp_timer = 0.09
+	_wisp_timer = _wisp_gap
 	_fire_projectile("wisp", _wisp_power)
 
-func _melee_strike(reach: float, damage: float, min_dot: float) -> void:
+## Spirit Orbs: three little spirits circle the hero and take turns spitting an
+## ember at the nearest foe, outliving the cast that summoned them.
+func _update_orbs(delta: float) -> void:
+	if _orb_nodes.is_empty():
+		return
+	_orb_life -= delta
+	if _orb_life <= 0.0:
+		for orb in _orb_nodes:
+			if is_instance_valid(orb):
+				orb.queue_free()
+		_orb_nodes.clear()
+		_orb_root = null
+		return
+	if _orb_root != null and is_instance_valid(_orb_root):
+		_orb_root.rotation.y += 1.8 * delta
+	_orb_timer -= delta
+	if _orb_timer > 0.0:
+		return
+	_orb_timer = _orb_gap
+	_orb_index += 1
+	_fire_projectile("wisp", _orb_power, Vector3.ZERO, {}, Color(1.0, 0.62, 0.3, 1.0))
+
+func _melee_strike(reach: float, damage: float, min_dot: float, poison_damage := 0.0, poison_duration := 0.0) -> void:
 	var forward := -global_transform.basis.z
 	var dealt := (damage + _weapon_power) * offhand_damage_multiplier("melee")
+	var lingering := (poison_damage + _weapon_power * 0.25) * offhand_damage_multiplier("melee")
 	for candidate in _hostiles():
 		if not is_instance_valid(candidate) or not candidate.has_method("take_damage"):
 			continue
@@ -1021,7 +1192,214 @@ func _melee_strike(reach: float, damage: float, min_dot: float) -> void:
 		if distance > 0.01 and forward.dot(offset / distance) < min_dot:
 			continue
 		candidate.take_damage(dealt, global_position + Vector3(0.0, 1.0, 0.0))
+		if poison_damage > 0.0 and candidate.has_method("apply_poison"):
+			candidate.call("apply_poison", lingering, poison_duration, global_position)
 		enemy_hit.emit(candidate, dealt)
+
+## Earth Splitter's furrow: a committed straight line ahead of the hero, hit by
+## length and width rather than a facing cone.
+func _line_strike(length: float, width: float, damage: float) -> void:
+	var forward := _aim_direction()
+	var dealt := (damage + _weapon_power) * offhand_damage_multiplier("melee")
+	for candidate in _hostiles():
+		if not is_instance_valid(candidate) or not candidate is Node3D:
+			continue
+		if candidate.has_method("is_defeated") and bool(candidate.call("is_defeated")):
+			continue
+		var offset: Vector3 = (candidate as Node3D).global_position - global_position
+		offset.y = 0.0
+		var along := forward.dot(offset)
+		if along < 0.0 or along > length:
+			continue
+		var lateral := (offset - forward * along).length()
+		if lateral > width * 0.5:
+			continue
+		(candidate as Node3D).take_damage(dealt, global_position + Vector3(0.0, 1.0, 0.0))
+		enemy_hit.emit(candidate, dealt)
+	_spawn_furrow(length, width)
+
+## The visual half of Earth Splitter: a torn earthen seam that flares and fades.
+func _spawn_furrow(length: float, width: float) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var seam := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(width * 0.8, 0.1, length)
+	seam.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.45, 0.33, 0.2, 0.9)
+	material.emission_enabled = true
+	material.emission = Color(0.95, 0.6, 0.25)
+	material.emission_energy_multiplier = 0.9
+	seam.material_override = material
+	seam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(seam)
+	var forward := _aim_direction()
+	var center := global_position + forward * (length * 0.5)
+	center.y = 0.06
+	seam.global_position = center
+	seam.look_at(center + forward, Vector3.UP)
+	var tween := seam.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(material, "emission_energy_multiplier", 0.0, 0.7)
+	tween.tween_property(material, "albedo_color:a", 0.0, 0.7)
+	tween.chain().tween_callback(seam.queue_free)
+
+## Lightning Strike: a white pillar cracks down on the marked ground, flashes,
+## and hammers everything near it.
+func _lightning_strike(point: Vector3, damage: float, radius: float) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var dealt := (damage + _weapon_power) * offhand_damage_multiplier("spell")
+	var pillar := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 0.16
+	mesh.bottom_radius = 0.42
+	mesh.height = 14.0
+	mesh.radial_segments = 7
+	pillar.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(1.0, 1.0, 1.0, 0.85)
+	material.emission_enabled = true
+	material.emission = Color(0.92, 0.95, 1.0)
+	material.emission_energy_multiplier = 3.2
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pillar.material_override = material
+	pillar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(pillar)
+	var strike_point := point
+	strike_point.y = 7.0
+	pillar.global_position = strike_point
+	var flash := OmniLight3D.new()
+	flash.light_color = Color(0.9, 0.94, 1.0)
+	flash.light_energy = 3.4
+	flash.omni_range = radius + 3.0
+	flash.shadow_enabled = false
+	flash.position = point + Vector3(0.0, 1.6, 0.0)
+	parent.add_child(flash)
+	var tween := pillar.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(material, "albedo_color:a", 0.0, 0.34)
+	tween.tween_property(flash, "light_energy", 0.0, 0.34)
+	tween.chain().tween_callback(pillar.queue_free)
+	tween.chain().tween_callback(flash.queue_free)
+	_spawn_shockwave(Color(0.92, 0.95, 1.0, 0.85), radius, 0.5)
+	for candidate in _hostiles():
+		if not is_instance_valid(candidate) or not candidate is Node3D:
+			continue
+		if candidate.has_method("is_defeated") and bool(candidate.call("is_defeated")):
+			continue
+		if (candidate as Node3D).global_position.distance_to(point) > radius + 0.4:
+			continue
+		if not candidate.has_method("take_damage"):
+			continue
+		(candidate as Node3D).take_damage(dealt, point + Vector3(0.0, 1.0, 0.0))
+		enemy_hit.emit(candidate, dealt)
+
+## Rain of Arrows: pick a landing spot on the marked ground and loft a shaft
+## high enough that its fall carries it there.
+func _rain_direction() -> Vector3:
+	var radius := float(_skill_data.get("radius", 3.2))
+	var offset := Vector3(randf_range(-radius, radius) * 0.8, 0.0, randf_range(-radius, radius) * 0.8)
+	var goal := (_aim_point + offset)
+	goal.y = 0.0
+	var origin := _left_hand.global_position
+	var flat := goal - origin
+	flat.y = 0.0
+	var distance := flat.length()
+	# Rain arrows fall at gravity 16 while flying 20 m/s: aim the launch above
+	# the mark so the drop lands the shaft on it.
+	var lift := clampf(distance * distance * 16.0 / (2.0 * 20.0 * 20.0), 1.0, 4.0)
+	var direction := (goal - origin + Vector3(0.0, lift + 0.4, 0.0)).normalized()
+	if direction.length_squared() < 0.01:
+		direction = Vector3.UP
+	return direction
+
+## Illusion Clone: a smiling copy stands in the road and nearby enemies argue
+## with it instead of the hero, for a while.
+func _spawn_clone(duration: float, radius: float) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var clone := MeshInstance3D.new()
+	var body := CapsuleMesh.new()
+	body.radius = 0.26
+	body.height = 1.15
+	clone.mesh = body
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.97, 0.76, 0.5, 0.6)
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.62, 0.3)
+	material.emission_energy_multiplier = 0.7
+	clone.material_override = material
+	clone.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(clone)
+	var spot := global_position + _aim_direction() * 1.3
+	spot.y = 0.85
+	clone.global_position = spot
+	var bob := clone.create_tween().set_loops()
+	bob.tween_property(clone, "position:y", 0.95, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	bob.tween_property(clone, "position:y", 0.85, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# Each second of the illusion, pull aggro from everything in reach.
+	var elapsed := 0.0
+	while elapsed < duration and is_inside_tree():
+		var wait := minf(1.0, duration - elapsed)
+		await get_tree().create_timer(wait).timeout
+		if not is_inside_tree() or not is_instance_valid(clone):
+			return
+		elapsed += wait
+		var point := clone.global_position
+		for candidate in _hostiles():
+			if not is_instance_valid(candidate) or not candidate is Node3D:
+				continue
+			if candidate.has_method("is_defeated") and bool(candidate.call("is_defeated")):
+				continue
+			if candidate.has_method("distract") and (candidate as Node3D).global_position.distance_to(point) <= radius:
+				candidate.call("distract", point, 1.5)
+	if is_instance_valid(clone):
+		clone.queue_free()
+
+## Spirit Orbs: a small orbit of embers that circles the hero and takes turns
+## spitting foxfire at whatever comes close. They outlive the cast.
+func _spawn_orbs(count: int, damage: float, interval: float, duration: float) -> void:
+	for orb in _orb_nodes:
+		if is_instance_valid(orb):
+			orb.queue_free()
+	_orb_nodes.clear()
+	_orb_root = null
+	_orb_power = damage
+	_orb_gap = maxf(interval, 0.2)
+	_orb_timer = 0.0
+	_orb_life = duration
+	_orb_index = 0
+	var root := Node3D.new()
+	add_child(root)
+	root.position = Vector3(0.0, 1.05, 0.0)
+	_orb_root = root
+	var color := Color(1.0, 0.62, 0.3, 1.0)
+	for i in maxi(1, count):
+		var orb := MeshInstance3D.new()
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.13
+		mesh.height = 0.26
+		mesh.radial_segments = 8
+		mesh.rings = 5
+		orb.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = color
+		material.emission_enabled = true
+		material.emission = color
+		material.emission_energy_multiplier = 2.4
+		orb.material_override = material
+		orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var ring_angle := TAU * (float(i) / float(maxi(1, count))) + 0.35
+		orb.position = Vector3(cos(ring_angle) * 0.85, 0.0, sin(ring_angle) * 0.85)
+		root.add_child(orb)
+		_orb_nodes.append(orb)
 
 ## Every damageable target the hero may strike: practice dummies, wild monsters
 ## and the named elite all answer the same call, so one hit path serves the whole
@@ -1040,31 +1418,357 @@ func _spawn_shockwave(color: Color, radius: float, duration: float) -> void:
 	wave.global_position = global_position + (-global_transform.basis.z) * 0.7 + Vector3(0.0, 0.08, 0.0)
 	wave.setup(color, radius, duration)
 
-func _fire_projectile(kind: String, damage: float, direction_override := Vector3.ZERO) -> void:
+# ---------------------------------------------------------------------------
+# Skill visual effects
+# ---------------------------------------------------------------------------
+
+## The color a skill should wear: its school's hue when it has one, otherwise
+## the trail color of whatever is in hand.
+func _skill_color(fallback := Color(0.9, 0.85, 0.6, 1.0)) -> Color:
+	var school: Dictionary = SKILL_LIBRARY.school(str(_skill_data.get("school", "")))
+	if school.has("color"):
+		var color: Color = school["color"]
+		if color.a > 0.01:
+			return color
+	var weapon := get_weapon_data()
+	if weapon.has("trail_color"):
+		var trail: Color = weapon["trail_color"]
+		if trail.a > 0.01:
+			return trail
+	return fallback
+
+## A sweeping crescent of light that traces the swing: short glowing segments
+## ride a pivot that sweeps through `sweep_degrees` while the whole thing fades.
+## A 360-degree sweep spins a full ring — the whirlwind's signature.
+func _spawn_arc_slash(color: Color, radius: float, duration: float, sweep_degrees: float) -> void:
+	var pivot := Node3D.new()
+	add_child(pivot)
+	pivot.position = Vector3(0.0, 1.0, 0.0)
+	var forward := _aim_direction()
+	var base_yaw := atan2(-forward.x, -forward.z)
+	pivot.rotation.y = base_yaw
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(color.r, color.g, color.b, minf(color.a, 0.9))
+	material.emission_enabled = true
+	material.emission = Color(color.r, color.g, color.b)
+	material.emission_energy_multiplier = 2.2
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.05, 0.24, 0.3)
+	var full_circle := sweep_degrees >= 359.0
+	var segments := 7
+	var half := deg_to_rad(sweep_degrees) * 0.5
+	for i in segments:
+		var a := TAU * float(i) / float(segments) if full_circle \
+			else lerpf(-half, half, float(i) / float(maxi(1, segments - 1)))
+		var segment := MeshInstance3D.new()
+		segment.mesh = mesh
+		segment.material_override = material
+		segment.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		segment.position = Vector3(sin(a) * radius, 0.0, -cos(a) * radius)
+		segment.rotation.y = -a
+		pivot.add_child(segment)
+	var sweep := TAU if full_circle else deg_to_rad(sweep_degrees)
+	var tween := pivot.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(pivot, "rotation:y", base_yaw + sweep, duration) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(material, "albedo_color:a", 0.0, duration)
+	tween.chain().tween_callback(pivot.queue_free)
+
+## A ward pulse: a flat ring of light around the hero that beats like a heart
+## while the guard holds, then fades.
+func _spawn_ward_ring(color: Color, duration: float) -> void:
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.82
+	torus.outer_radius = 1.0
+	torus.rings = 28
+	torus.ring_segments = 4
+	ring.mesh = torus
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(color.r, color.g, color.b, 0.7)
+	material.emission_enabled = true
+	material.emission = Color(color.r, color.g, color.b)
+	material.emission_energy_multiplier = 1.8
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	ring.material_override = material
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(ring)
+	ring.position = Vector3(0.0, 0.12, 0.0)
+	ring.scale = Vector3.ONE * 0.8
+	var beat := maxf(duration / 3.0, 0.15)
+	var pulse := ring.create_tween().set_loops(3)
+	pulse.tween_property(ring, "scale", Vector3.ONE * 1.2, beat) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	pulse.tween_property(ring, "scale", Vector3.ONE * 0.8, beat) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	var fade := ring.create_tween()
+	fade.tween_property(material, "albedo_color:a", 0.0, duration)
+	fade.tween_callback(ring.queue_free)
+
+## Little lights that travel along the hero: they rise out of the ground for a
+## mend ("rise") or drift down and inward for a focus ("converge").
+func _spawn_motes(color: Color, count: int, duration: float, mode: String) -> void:
+	for i in maxi(1, count):
+		var mote := MeshInstance3D.new()
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.06
+		mesh.height = 0.12
+		mesh.radial_segments = 6
+		mesh.rings = 3
+		mote.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color(color.r, color.g, color.b, 0.85)
+		material.emission_enabled = true
+		material.emission = Color(color.r, color.g, color.b)
+		material.emission_energy_multiplier = 2.4
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mote.material_override = material
+		mote.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mote)
+		var angle := TAU * float(i) / float(maxi(1, count)) + randf() * 0.5
+		var start_radius := randf_range(0.8, 1.3)
+		var target_height := randf_range(0.7, 1.6)
+		var start: Vector3
+		var goal: Vector3
+		if mode == "converge":
+			start = Vector3(cos(angle) * (start_radius + 0.6), target_height + 1.3, sin(angle) * (start_radius + 0.6))
+			goal = Vector3(cos(angle) * 0.2, target_height, sin(angle) * 0.2)
+		else:
+			start = Vector3(cos(angle) * start_radius, randf_range(0.05, 0.3), sin(angle) * start_radius)
+			goal = Vector3(cos(angle) * 0.15, target_height + 0.6, sin(angle) * 0.15)
+		mote.position = start
+		var delay := randf_range(0.0, duration * 0.3)
+		var travel := maxf(duration - delay, 0.1)
+		var tween := mote.create_tween()
+		tween.tween_interval(delay)
+		tween.tween_property(mote, "position", goal, travel) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		tween.tween_callback(mote.queue_free)
+		var fade := mote.create_tween()
+		fade.tween_interval(delay)
+		fade.tween_property(material, "albedo_color:a", 0.0, travel)
+
+## Returning to the well: a column of gold light around the hero plus motes
+## climbing it, so the recall reads before the world lets go.
+func _spawn_recall_beam() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var beam := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 0.5
+	mesh.bottom_radius = 0.62
+	mesh.height = 5.5
+	mesh.radial_segments = 10
+	beam.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(1.0, 0.85, 0.5, 0.45)
+	material.emission_enabled = true
+	material.emission = Color(1.0, 0.85, 0.5)
+	material.emission_energy_multiplier = 2.0
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	beam.material_override = material
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(beam)
+	beam.global_position = global_position + Vector3(0.0, 2.6, 0.0)
+	var tween := beam.create_tween()
+	tween.tween_property(material, "albedo_color:a", 0.0, 0.9)
+	tween.tween_callback(beam.queue_free)
+	_spawn_motes(Color(1.0, 0.85, 0.5, 1.0), 12, 1.0, "rise")
+
+## Dash streaks: thin light lines ahead of the hero streaming backward, so the
+## lunge has visible wind in it.
+func _spawn_speed_lines() -> void:
+	var direction := _dash_direction
+	if direction.length_squared() < 0.01:
+		direction = -global_transform.basis.z
+	direction = direction.normalized()
+	var lateral := direction.cross(Vector3.UP).normalized()
+	for i in 6:
+		var line := MeshInstance3D.new()
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(0.035, 0.035, randf_range(0.5, 0.9))
+		line.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color(0.95, 0.95, 1.0, 0.55)
+		material.emission_enabled = true
+		material.emission = Color(0.9, 0.92, 1.0)
+		material.emission_energy_multiplier = 1.6
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		line.material_override = material
+		line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(line)
+		var spot := global_position \
+			+ direction * randf_range(0.7, 1.7) \
+			+ lateral * randf_range(-0.9, 0.9) \
+			+ Vector3(0.0, randf_range(0.2, 1.4), 0.0)
+		line.global_position = spot
+		line.look_at(spot + direction, Vector3.UP)
+		var tween := line.create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(line, "global_position", spot - direction * 2.6, 0.28)
+		tween.tween_property(material, "albedo_color:a", 0.0, 0.28)
+		tween.chain().tween_callback(line.queue_free)
+
+## Earth Splitter's dust: clods and grit puff up along the furrow as the ground
+## tears open.
+func _spawn_dust_burst(length: float, width: float) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var forward := _aim_direction()
+	var lateral := Vector3(forward.z, 0.0, -forward.x)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.5, 0.4, 0.28, 0.75)
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.roughness = 1.0
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.22
+	mesh.height = 0.44
+	mesh.radial_segments = 7
+	mesh.rings = 4
+	for i in 9:
+		var puff := MeshInstance3D.new()
+		puff.mesh = mesh
+		puff.material_override = material
+		puff.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var along := (0.12 + 0.76 * float(i) / 8.0) * length + randf_range(-0.3, 0.3)
+		var side := randf_range(-width, width) * 0.5
+		var spot := global_position + forward * along + lateral * side
+		spot.y = randf_range(0.1, 0.35)
+		parent.add_child(puff)
+		puff.global_position = spot
+		puff.scale = Vector3.ONE * randf_range(0.5, 0.8)
+		var tween := puff.create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(puff, "scale", Vector3.ONE * randf_range(1.5, 2.1), 0.55)
+		tween.tween_property(puff, "global_position", spot + Vector3(
+			randf_range(-0.4, 0.4), randf_range(0.5, 0.9), randf_range(-0.4, 0.4)), 0.55)
+		tween.tween_property(material, "albedo_color:a", 0.0, 0.55)
+		tween.chain().tween_callback(puff.queue_free)
+
+## The storm's promise: a faint ring burned onto the marked ground while the
+## lightning gathers, then hammered by the strike itself.
+func _spawn_ground_mark(point: Vector3, radius: float, duration: float) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var mark := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.86
+	torus.outer_radius = 1.0
+	torus.rings = 24
+	torus.ring_segments = 4
+	mark.mesh = torus
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.85, 0.9, 1.0, 0.55)
+	material.emission_enabled = true
+	material.emission = Color(0.85, 0.9, 1.0)
+	material.emission_energy_multiplier = 1.6
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mark.material_override = material
+	mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(mark)
+	mark.global_position = point + Vector3(0.0, 0.09, 0.0)
+	mark.scale = Vector3.ONE * radius * 0.35
+	var tween := mark.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(mark, "scale", Vector3.ONE * radius, duration * 0.7) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(material, "albedo_color:a", 0.0, duration)
+	tween.chain().tween_callback(mark.queue_free)
+
+## A brief bloom where a shot or spell leaves the hand — small, quick, colored
+## like the projectile it launches.
+func _spawn_cast_flash(spawn: Vector3, color: Color) -> void:
+	var parent := get_parent()
+	if parent == null or color.a <= 0.01:
+		return
+	var flash := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.12
+	mesh.height = 0.24
+	mesh.radial_segments = 8
+	mesh.rings = 4
+	flash.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(color.r, color.g, color.b, 0.7)
+	material.emission_enabled = true
+	material.emission = Color(color.r, color.g, color.b)
+	material.emission_energy_multiplier = 2.6
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	flash.material_override = material
+	flash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(flash)
+	flash.global_position = spawn
+	flash.scale = Vector3.ONE * 0.5
+	var tween := flash.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(flash, "scale", Vector3.ONE * 1.5, 0.22)
+	tween.tween_property(material, "albedo_color:a", 0.0, 0.22)
+	tween.chain().tween_callback(flash.queue_free)
+
+
+func _fire_projectile(kind: String, damage: float, direction_override := Vector3.ZERO, options := {}, color_override := Color(0.0, 0.0, 0.0, 0.0)) -> void:
 	var target := _find_nearest_dummy(18.0)
 	var dealt := (damage + _weapon_power) * offhand_damage_multiplier("missile")
 	var direction := _aim_direction()
 	if direction_override.length_squared() > 0.001:
 		direction = direction_override.normalized()
-	elif kind == "arrow":
+	elif kind == "arrow" or kind == "rain_arrow":
 		# Arrows follow the box reticle. If the HUD has not supplied an aim
 		# point, fall back to the nearest straw man, then to the hero's facing.
 		direction = _aim_direction_3d(1.04, 0.92)
 		if not _has_aim and target != null:
 			direction = (target.global_position + Vector3(0.0, 0.9, 0.0) \
 				- (global_position + Vector3(0.0, 1.04, 0.0))).normalized()
-	elif target != null:
-		direction = (target.global_position + Vector3(0.0, 0.9, 0.0) \
-			- (global_position + Vector3(0.0, 1.05, 0.0))).normalized()
+	elif kind == "wisp" or kind == "dagger":
+		# Wisps and thrown knives curve after the nearest foe.
+		if target != null:
+			direction = (target.global_position + Vector3(0.0, 0.9, 0.0) \
+				- (global_position + Vector3(0.0, 1.05, 0.0))).normalized()
+	else:
+		# Spells and energy waves fly the aimed line.
+		direction = _aim_direction_3d(1.05, 0.95)
 	var spawn := global_position + Vector3(0.0, 1.02, 0.0) + direction * 0.55
-	if kind == "arrow":
+	if kind == "arrow" or kind == "rain_arrow":
 		spawn = _left_hand.global_position + direction * 0.2
 	var projectile := PROJECTILE.new()
 	get_parent().add_child(projectile)
 	projectile.global_position = spawn
 	projectile.hit_target.connect(_on_projectile_hit)
-	var color := Color(0.62, 0.98, 0.9, 1.0) if kind == "wisp" else Color(0.96, 0.86, 0.55, 1.0)
-	projectile.configure(kind, direction, target, dealt, color)
+	var color := color_override
+	if color.a <= 0.01:
+		color = _projectile_color(kind)
+	projectile.configure(kind, direction, target, dealt, color, options)
+	_spawn_cast_flash(spawn, color)
+
+func _projectile_color(kind: String) -> Color:
+	match kind:
+		"wisp":
+			return Color(0.62, 0.98, 0.9, 1.0)
+		"wave":
+			return Color(0.98, 0.92, 0.62, 1.0)
+		"dagger":
+			return Color(0.85, 0.88, 0.95, 1.0)
+		"bolt":
+			return Color(0.85, 0.92, 1.0, 1.0)
+		"fireball":
+			return Color(1.0, 0.52, 0.18, 1.0)
+		"ice_lance":
+			return Color(0.55, 0.82, 1.0, 1.0)
+	return Color(0.96, 0.86, 0.55, 1.0)
 
 func _on_projectile_hit(target: Node, amount: float) -> void:
 	enemy_hit.emit(target, amount)

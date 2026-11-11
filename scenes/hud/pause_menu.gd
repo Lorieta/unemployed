@@ -6,13 +6,14 @@ extends OverlayPanel
 ## alive. The HUD owns this panel: it pauses/unpauses around `closed`.
 
 signal settings_requested
+signal save_requested
 signal quit_to_title_requested
 signal quit_game_requested
 
 func _ready() -> void:
 	title = "PAUSED"
 	subtitle = "THE WAY RESTS A MOMENT"
-	panel_size = Vector2(460.0, 400.0)
+	panel_size = Vector2(460.0, 440.0)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	super._ready()
 
@@ -21,6 +22,7 @@ func _build_content() -> void:
 	add_rule()
 	add_spacer(4.0)
 	add_action_button("Resume", close_panel)
+	add_action_button("Save Game", func() -> void: save_requested.emit())
 	add_action_button("Settings", func() -> void: settings_requested.emit())
 	add_rule()
 	add_action_button("Quit to Title", func() -> void: quit_to_title_requested.emit())

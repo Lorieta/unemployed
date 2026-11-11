@@ -8,12 +8,18 @@ extends CharacterBody3D
 
 signal defeated(monster: Node)
 
+const HP_BAR_SHADER := preload("res://scenes/world/monster_hp_bar.gdshader")
+
 @export var variant := "mossling"
 @export var display_name := "Mossling"
 @export var max_health := 70.0
 @export var damage := 9.0
 @export var move_speed := 2.4
 @export var aggro_range := 13.0
+## Once chasing, the monster gives up when the hero slips this far away.
+@export var deaggro_range := 21.0
+## And it never drags itself this far from its home turf, whatever happens.
+@export var leash_range := 25.0
 @export var attack_range := 1.9
 @export var attack_interval := 1.9
 @export var xp_reward := 40.0
@@ -26,6 +32,7 @@ var health := 70.0
 
 var _dead := false
 var _time := 0.0
+var _chasing := false
 var _swing := 0.0
 var _attack_cooldown := 0.0
 var _hit_pending := false
@@ -36,8 +43,11 @@ var _visual: Node3D
 var _flash := 0.0
 var _flash_materials: Array[StandardMaterial3D] = []
 var _bar_root: Node3D
-var _bar_fill: MeshInstance3D
-var _bar_fill_material: StandardMaterial3D
+var _bar_material: ShaderMaterial
+var _bar_ratio := 1.0
+var _bar_ghost := 1.0
+var _last_hit_time := -10.0
+var _hp_label: Label3D
 var _name_label: Label3D
 var _collision: CollisionShape3D
 var _wisp := false
@@ -56,6 +66,9 @@ func _ready() -> void:
 	add_to_group("enemy")
 	if boss:
 		add_to_group("enemy_boss")
+		# The named elite fights to the edge of its clearing, not the whole map.
+		deaggro_range = maxf(deaggro_range, 34.0)
+		leash_range = maxf(leash_range, 40.0)
 	_spawn_position = global_position
 	_spawn_rotation = rotation.y
 	health = max_health
@@ -257,63 +270,75 @@ func _build_body() -> void:
 func _build_health_bar() -> void:
 	_bar_root = Node3D.new()
 	_bar_root.name = "HealthBar"
-	_bar_root.position = Vector3(0.0, _height + 0.42, 0.0)
+	_bar_root.position = Vector3(0.0, _height + 0.45, 0.0)
 	add_child(_bar_root)
 
-	var back_material := StandardMaterial3D.new()
-	back_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	back_material.albedo_color = Color(0.05, 0.04, 0.03, 0.85)
-	back_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	back_material.no_depth_test = true
-	back_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	var back := MeshInstance3D.new()
-	var back_mesh := QuadMesh.new()
-	back_mesh.size = Vector2(1.32, 0.15)
-	back_mesh.material = back_material
-	back.mesh = back_mesh
-	back.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_bar_root.add_child(back)
+	# A single shader-drawn pill replaces the old pair of scaled quads: the
+	# billboard keeps its true size while the fill moves through shader
+	# uniforms, so the bar never stretches or snaps as the camera moves.
+	_bar_material = ShaderMaterial.new()
+	_bar_material.shader = HP_BAR_SHADER
+	_bar_material.render_priority = 3
+	_bar_material.set_shader_parameter("ratio", 1.0)
+	_bar_material.set_shader_parameter("ghost", 1.0)
+	if boss:
+		# The named elite wears a hot ember rim instead of gold.
+		_bar_material.set_shader_parameter("rim_color", Color(1.0, 0.62, 0.3, 0.95))
 
-	_bar_fill_material = StandardMaterial3D.new()
-	_bar_fill_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_bar_fill_material.albedo_color = Color(0.66, 0.18, 0.14, 1.0)
-	_bar_fill_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	_bar_fill_material.no_depth_test = true
-	var fill := MeshInstance3D.new()
-	var fill_mesh := QuadMesh.new()
-	fill_mesh.size = Vector2(1.24, 0.08)
-	fill_mesh.material = _bar_fill_material
-	fill.mesh = fill_mesh
-	fill.position = Vector3(0.0, 0.0, 0.001)
-	fill.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_bar_root.add_child(fill)
-	_bar_fill = fill
+	var bar := MeshInstance3D.new()
+	var mesh := QuadMesh.new()
+	mesh.size = Vector2(1.55, 0.2) if boss else Vector2(1.3, 0.15)
+	mesh.material = _bar_material
+	bar.mesh = mesh
+	bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_bar_root.add_child(bar)
+
+	# A small live tally riding the bar, e.g. "48 / 70".
+	_hp_label = Label3D.new()
+	_hp_label.font_size = 40 if boss else 32
+	_hp_label.pixel_size = 0.0026
+	_hp_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_hp_label.no_depth_test = true
+	_hp_label.outline_size = 12
+	_hp_label.outline_modulate = Color(0.04, 0.03, 0.02, 1.0)
+	_hp_label.modulate = Color(1.0, 0.95, 0.85, 0.92)
+	_hp_label.render_priority = 4
+	_bar_root.add_child(_hp_label)
 
 	_name_label = Label3D.new()
 	_name_label.text = display_name.to_upper()
-	_name_label.font_size = 44 if not boss else 56
+	_name_label.font_size = 56 if boss else 44
 	_name_label.pixel_size = 0.0032
 	_name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_name_label.no_depth_test = true
 	_name_label.outline_size = 16
 	_name_label.outline_modulate = Color(0.05, 0.035, 0.02, 1.0)
-	_name_label.modulate = Color(0.94, 0.86, 0.68, 1.0) if not boss else Color(1.0, 0.72, 0.52, 1.0)
-	_name_label.position = Vector3(0.0, 0.24, 0.0)
+	_name_label.modulate = Color(1.0, 0.72, 0.52, 1.0) if boss else Color(0.94, 0.86, 0.68, 1.0)
+	_name_label.position = Vector3(0.0, 0.19, 0.0)
 	_bar_root.add_child(_name_label)
+	_update_health_bar()
 
 func _update_health_bar() -> void:
-	if _bar_fill == null:
+	_bar_ratio = clampf(health / maxf(max_health, 0.001), 0.0, 1.0)
+	if _bar_ghost < _bar_ratio:
+		# Heals snap the ghost forward to the truth immediately.
+		_bar_ghost = _bar_ratio
+	if _bar_material != null:
+		_bar_material.set_shader_parameter("ratio", _bar_ratio)
+		_bar_material.set_shader_parameter("ghost", _bar_ghost)
+	if _hp_label != null:
+		var text := "%d/%d" % [roundi(health), roundi(max_health)]
+		if text != _hp_label.text:
+			_hp_label.text = text
+
+## The pale wound trail lingers where the last hits landed, then bleeds down
+## toward the true fill after half a second — the same trick the HUD bars use.
+func _update_bar_ghost(delta: float) -> void:
+	if _bar_ghost <= _bar_ratio or _time - _last_hit_time < 0.5:
 		return
-	var ratio := clampf(health / maxf(max_health, 0.001), 0.0, 1.0)
-	_bar_fill.scale = Vector3(maxf(ratio, 0.001), 1.0, 1.0)
-	_bar_fill.position.x = -0.62 + 0.62 * ratio
-	if _bar_fill_material != null:
-		if ratio > 0.6:
-			_bar_fill_material.albedo_color = Color(0.58, 0.72, 0.32, 1.0)
-		elif ratio > 0.3:
-			_bar_fill_material.albedo_color = Color(0.82, 0.62, 0.22, 1.0)
-		else:
-			_bar_fill_material.albedo_color = Color(0.72, 0.2, 0.14, 1.0)
+	_bar_ghost = maxf(_bar_ratio, _bar_ghost - delta * 0.85)
+	if _bar_material != null:
+		_bar_material.set_shader_parameter("ghost", _bar_ghost)
 
 # ---------------------------------------------------------------------------
 # Behaviour
@@ -327,6 +352,7 @@ func _physics_process(delta: float) -> void:
 	_update_status(delta)
 	if _dead:
 		return
+	_update_bar_ghost(delta)
 	if _player == null or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as Node3D
 	_update_bar_visibility()
@@ -343,7 +369,19 @@ func _physics_process(delta: float) -> void:
 	offset.y = 0.0
 	var distance := offset.length()
 	var speed := move_speed * _slow_multiplier()
-	if distance <= aggro_range and distance > 0.01:
+
+	# Aggro behaves like a proper RPG encounter: the monster notices the hero
+	# up close, gives up when they slip beyond its attention span, and never
+	# drags itself past the leash around its home turf. No more conga lines
+	# trailing the player across the whole Reach.
+	if not _chasing:
+		if distance <= aggro_range:
+			_chasing = true
+	elif distance > deaggro_range \
+			or global_position.distance_to(_spawn_position) > leash_range:
+		_chasing = false
+
+	if _chasing and distance > 0.01:
 		var to_player := offset / distance
 		if distance > attack_range * 0.78:
 			var desired := to_player * speed
@@ -357,6 +395,10 @@ func _physics_process(delta: float) -> void:
 		var wanted_yaw := atan2(-to_player.x, -to_player.z)
 		rotation.y = lerp_angle(rotation.y, wanted_yaw, 1.0 - exp(-6.0 * delta))
 	else:
+		# Off the chase, it drifts home — knitting any wounds back together on
+		# the way, the way resting monsters do between fights.
+		health = minf(max_health, health + max_health * 0.08 * delta)
+		_update_health_bar()
 		var home := _spawn_position - global_position
 		home.y = 0.0
 		if home.length() > 1.2:
@@ -568,6 +610,10 @@ func take_damage(amount: float, hit_position := Vector3.ZERO) -> void:
 		return
 	if dormant:
 		awaken()
+	# Pain pulls aggro, however the hit arrived — a well-placed arrow from
+	# beyond arm's reach still earns the monster's full attention.
+	_chasing = true
+	_last_hit_time = _time
 	health = maxf(0.0, health - amount)
 	_flash = 1.0
 	_spawn_number(amount, hit_position)
@@ -607,10 +653,26 @@ func awaken() -> void:
 	if not dormant:
 		return
 	dormant = false
+	_chasing = true
 	_play_idle_pop()
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud != null and hud.has_method("show_toast"):
 		hud.call("show_toast", "%s stirs. The briars pull taut." % display_name)
+
+## Save system: a Warden already felled in the saved run loads resting. It
+## goes straight to its death state without paying out loot a second time.
+func mark_defeated() -> void:
+	if _dead:
+		return
+	_dead = true
+	dormant = false
+	set_physics_process(false)
+	velocity = Vector3.ZERO
+	if _collision != null:
+		_collision.set_deferred("disabled", true)
+	if _bar_root != null:
+		_bar_root.visible = false
+	visible = false
 
 func is_defeated() -> bool:
 	return _dead
@@ -650,6 +712,9 @@ func _respawn() -> void:
 	rotation.y = _spawn_rotation
 	health = max_health
 	_dead = false
+	_chasing = false
+	_bar_ghost = 1.0
+	_last_hit_time = -10.0
 	visible = true
 	_visual.scale = Vector3.ONE
 	_visual.rotation = Vector3.ZERO

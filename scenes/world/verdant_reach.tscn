@@ -13,28 +13,43 @@
 [ext_resource type="Script" uid="uid://6tux7fnf2qu5" path="res://scenes/world/world_builder.gd" id="11_builder"]
 [ext_resource type="Script" path="res://scripts/dungeon/dungeon_manager.gd" id="12_dungeon"]
 
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial_reach"]
+sky_top_color = Color(0.19, 0.28, 0.47, 1)
+sky_horizon_color = Color(0.91, 0.63, 0.38, 1)
+sky_curve = 0.14
+ground_bottom_color = Color(0.24, 0.19, 0.14, 1)
+ground_horizon_color = Color(0.76, 0.55, 0.36, 1)
+sun_angle_max = 30.0
+sun_curve = 0.11
+
+[sub_resource type="Sky" id="Sky_reach"]
+sky_material = SubResource("SkyMaterial_reach")
+
 [sub_resource type="Environment" id="Environment_reach"]
-background_mode = 1
-background_color = Color(0.44, 0.58, 0.6, 1)
+background_mode = 2
+sky = SubResource("Sky_reach")
 ambient_light_source = 2
-ambient_light_color = Color(0.62, 0.69, 0.65, 1)
-ambient_light_energy = 0.62
-tonemap_mode = 2
+ambient_light_color = Color(0.65, 0.6, 0.55, 1)
+ambient_light_energy = 0.85
+tonemap_mode = 3
 glow_enabled = true
-glow_intensity = 0.55
-glow_bloom = 0.08
+glow_intensity = 0.6
+glow_bloom = 0.1
 fog_enabled = true
-fog_light_color = Color(0.53, 0.63, 0.59, 1)
-fog_light_energy = 0.7
-fog_density = 0.008
-fog_aerial_perspective = 0.4
+fog_light_color = Color(0.83, 0.62, 0.44, 1)
+fog_light_energy = 0.75
+fog_density = 0.004
+fog_aerial_perspective = 0.55
+fog_sky_affect = 0.1
+fog_height = 0.0
+fog_height_density = 0.008
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ground"]
 render_priority = 0
 shader = ExtResource("3_ground_shader")
-shader_parameter/base_color = Color(0.29, 0.36, 0.29, 1)
-shader_parameter/tile_color = Color(0.33, 0.4, 0.32, 1)
-shader_parameter/line_color = Color(0.39, 0.46, 0.36, 1)
+shader_parameter/base_color = Color(0.26, 0.35, 0.2, 1)
+shader_parameter/tile_color = Color(0.36, 0.47, 0.25, 1)
+shader_parameter/line_color = Color(0.52, 0.47, 0.28, 1)
 shader_parameter/cell_size = 2.0
 shader_parameter/pattern_fade_start = 20.0
 shader_parameter/pattern_fade_end = 60.0
@@ -53,10 +68,11 @@ environment = SubResource("Environment_reach")
 
 [node name="Sun" type="DirectionalLight3D" parent="." unique_id=155995769]
 transform = Transform3D(0.7518057, 0.5246075, -0.3994685, 0, 0.6058201, 0.7956016, 0.65938467, -0.59813786, 0.45545903, 0, 12, 0)
-light_color = Color(1, 0.94, 0.82, 1)
-light_energy = 1.12
+light_color = Color(1, 0.87, 0.66, 1)
+light_energy = 1.35
 shadow_enabled = true
-directional_shadow_max_distance = 70.0
+shadow_blur = 1.4
+directional_shadow_max_distance = 80.0
 
 [node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1356978116]
 transform = Transform3D(-0.8159128, -0.31261098, 0.48637545, -0.020211762, 0.8561325, 0.5163612, -0.57782185, 0.41147515, -0.70484763, -0.12636006, 0.054728325, 0.034962177)

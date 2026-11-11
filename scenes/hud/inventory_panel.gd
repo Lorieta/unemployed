@@ -52,6 +52,12 @@ const ITEM_DEFINITIONS := {
 	"waybread": {"icon": ICON_HERB, "name": "Waybread", "description": "Hearth-baked and honeyed. Restores 25 health on the road."},
 	"return": {"icon": ICON_SCROLL, "name": "Scroll of Return", "description": "Read the runes to return to the old well."},
 	"torch": {"icon": ICON_TORCH, "name": "Pitch Torch", "description": "Click to kindle or smother a warm travelling light."},
+	"soulstone": {"icon": ICON_GEM, "name": "Verdant Soulstone", "description": "A shard of the Reach's old magic. It hums faintly."},
+	"key": {"icon": ICON_KEY, "name": "Old Well Key", "description": "A cold iron key. Opens nothing you have found yet."},
+	"map": {"icon": ICON_MAP, "name": "Valley Map", "description": "Unfolds the chart of the Verdant Reach."},
+	"ring": {"icon": ICON_RING, "name": "Band of the Wanderer", "description": "A plain ring, warm to the touch."},
+	"gold": {"icon": ICON_COIN, "name": "Gold Coins", "description": "Coins in a worn leather purse."},
+	"shield": {"icon": ICON_SHIELD, "name": "Travel Shield", "description": "Oaken, scarred, and steady. It has seen worse roads."},
 }
 
 var _equipment := [
@@ -81,6 +87,7 @@ var _tween: Tween
 var _equipped := "sword"
 var _equipped_offhand := "shield"
 var _armory_tab := "weapons"
+var _allowed_weapons: Array = []
 var _weapon_slots := {}
 var _offhand_slots := {}
 var _item_slots: Array[QuickSlot] = []
@@ -232,8 +239,13 @@ func _build_items() -> void:
 
 func _build_armory() -> void:
 	var parent: Control = $Panel/ArmoryRows
-	for i in WeaponLibrary.ORDER.size():
-		var weapon_id: String = WeaponLibrary.ORDER[i]
+	for child in parent.get_children():
+		parent.remove_child(child)
+		child.queue_free()
+	_weapon_slots = {}
+	var ids := _armory_weapon_ids()
+	for i in ids.size():
+		var weapon_id: String = ids[i]
 		var data: Dictionary = WeaponLibrary.WEAPONS[weapon_id]
 		var y := ARMORY_START_Y + float(i) * ARMORY_ROW_HEIGHT
 
@@ -249,6 +261,30 @@ func _build_armory() -> void:
 
 		parent.add_child(_make_label(str(data["name"]), Vector2(66.0, y + 4.0), Vector2(166.0, 22.0), 12, COLOR_PARCHMENT))
 		parent.add_child(_make_label(str(data["class"]), Vector2(66.0, y + 25.0), Vector2(166.0, 18.0), 9, COLOR_GOLD))
+
+	for id in _weapon_slots:
+		(_weapon_slots[id] as QuickSlot).set_selected(str(id) == _equipped)
+	if _armory_tab == "weapons":
+		_update_weapon_detail(_equipped)
+
+## The weapon ids the armory should list: every weapon until the HUD locks the
+## satchel to the hero's class, then only that hero's arm.
+func _armory_weapon_ids() -> Array:
+	if _allowed_weapons.is_empty():
+		return WeaponLibrary.ORDER
+	var ids: Array = []
+	for weapon_id in WeaponLibrary.ORDER:
+		if _allowed_weapons.has(weapon_id):
+			ids.append(weapon_id)
+	return ids
+
+## Locks the armory to a specific hero. Pass an empty array to show everything
+## (debug runs keep the old behaviour).
+func set_allowed_weapons(weapon_ids: Array) -> void:
+	_allowed_weapons = weapon_ids.duplicate()
+	if _weapon_slots.is_empty():
+		return
+	_build_armory()
 
 ## The second page of the armory. Off-hands live on the left arm, so every hero
 ## can carry one of these from the first minute of the game.
@@ -383,6 +419,40 @@ func get_item_count(item_id: String) -> int:
 			return int(entry["stack"])
 	return 0
 
+## A plain id → stack snapshot for SaveManager. Only carried stacks are
+## recorded; empty grid slots contribute nothing.
+func get_save_items() -> Dictionary:
+	var stacks := {}
+	for entry in _items:
+		var item_id := str(entry.get("id", ""))
+		var count := int(entry.get("stack", 0))
+		if item_id.is_empty() or count <= 0:
+			continue
+		stacks[item_id] = count
+	return stacks
+
+## Rebuilds the satchel from a save. The initial demo satchel is discarded;
+## whatever the save lists is what the hero is carrying. Offerings the save
+## does not know about are skipped.
+func restore_items(stacks: Dictionary) -> void:
+	_items.clear()
+	for item_id in stacks.keys():
+		var count := int(stacks[item_id])
+		if count <= 0 or not ITEM_DEFINITIONS.has(item_id):
+			continue
+		if _items.size() >= GRID_SLOTS:
+			break
+		var definition: Dictionary = ITEM_DEFINITIONS[item_id]
+		_items.append({
+			"id": item_id,
+			"icon": definition["icon"],
+			"name": definition["name"],
+			"stack": count,
+			"description": definition["description"],
+		})
+	_rebuild_items()
+	refresh_counts()
+
 func set_gold(value: int) -> void:
 	$Panel/GoldValue.text = _format_number(value)
 
@@ -407,8 +477,14 @@ func _format_number(number: int) -> String:
 
 func _on_weapon_slot(weapon_id: String) -> void:
 	_update_weapon_detail(weapon_id)
+	if not _weapon_allowed(weapon_id):
+		_weapon_detail_desc.text = "%s\n\nThis arm belongs to another road. Only your own weapon may be drawn." % str(WeaponLibrary.WEAPONS[weapon_id]["description"])
+		return
 	_weapon_slots[weapon_id].set_selected(true)
 	weapon_selected.emit(weapon_id)
+
+func _weapon_allowed(weapon_id: String) -> bool:
+	return _allowed_weapons.is_empty() or _allowed_weapons.has(weapon_id)
 
 func _on_offhand_slot(offhand_id: String) -> void:
 	_update_offhand_detail(offhand_id)

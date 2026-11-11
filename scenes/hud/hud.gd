@@ -37,9 +37,14 @@ const SLOT_COUNT := 5
 const ITEM_SLOT_COUNT := 5
 
 
-const MAX_HEALTH := 160.0
-const MAX_MANA := 120.0
-const MAX_XP := 18000.0
+const BASE_MAX_HEALTH := 160.0
+const BASE_MAX_MANA := 120.0
+const HEALTH_PER_LEVEL := 14.0
+const MANA_PER_LEVEL := 9.0
+const POWER_PER_LEVEL := 2.5
+const MITIGATION_PER_LEVEL := 0.005
+const XP_BASE := 650.0
+const XP_GROWTH := 500.0
 const QUEST_REWARD := 120
 
 const STORY_BEASTS_REQUIRED := 8
@@ -129,9 +134,16 @@ const COLOR_OUTLINE := Color(0.035, 0.028, 0.02, 0.95)
 
 var _health := 122.0
 var _mana := 82.0
-var _xp := 12480.0
-var _gold := 1284
-var _level := 7
+var _level := 1
+var _xp := 0.0
+var _max_health := BASE_MAX_HEALTH
+var _max_mana := BASE_MAX_MANA
+var _max_xp := XP_BASE
+var _gold := 60
+var _character_id := "knight"
+var _character_name := "Aldric"
+var _allowed_school := "sword"
+var _loading_run := false
 
 var _slots: Array[QuickSlot] = []
 var _skill_slots: Array[QuickSlot] = []
@@ -179,10 +191,11 @@ func _ready() -> void:
 	_build_buttons()
 	_build_overlays()
 	_resolve_player()
+	_apply_run_data()
 	_refresh_vitals()
 	_refresh_progress()
 	_refresh_quest()
-	_update_weapon_label("sword")
+	_update_weapon_label(str(_player.get("equipped_weapon")) if _player != null else "sword")
 	_toast.modulate.a = 0.0
 	_prompt.visible = false
 	_inventory.closed.connect(_on_inventory_closed)
@@ -276,6 +289,7 @@ func _build_overlays() -> void:
 	_settings.restart_requested.connect(_on_restart_requested)
 	_pause.closed.connect(_on_pause_closed)
 	_pause.settings_requested.connect(_on_pause_settings)
+	_pause.save_requested.connect(_on_save_requested)
 	_pause.quit_to_title_requested.connect(_on_quit_to_title)
 	_pause.quit_game_requested.connect(_on_quit_game)
 	_dialogue.choice_selected.connect(_on_dialogue_choice)
@@ -466,6 +480,7 @@ func _on_pause_settings() -> void:
 
 func _on_quit_to_title() -> void:
 	# The paused state survives scene changes, so release it explicitly.
+	_save_run()
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/main/main_menu.tscn")
 
@@ -498,24 +513,24 @@ func _activate_slot(index: int) -> void:
 
 	match str(data["kind"]):
 		"health":
-			if _health >= MAX_HEALTH - 0.5:
+			if _health >= _max_health - 0.5:
 				show_toast("Your health is already full.")
 				return
 			if slot.stack <= 0 or not _inventory.consume_item("health"):
 				show_toast("No crimson draughts remain.  Mira sells more.")
 				return
-			_health = minf(MAX_HEALTH, _health + 45.0)
+			_health = minf(_max_health, _health + 45.0)
 			_refresh_vitals()
 			_sync_item_stacks()
 			show_toast("The crimson draught restores 45 health.")
 		"mana":
-			if _mana >= MAX_MANA - 0.5:
+			if _mana >= _max_mana - 0.5:
 				show_toast("Your mana is already full.")
 				return
 			if slot.stack <= 0 or not _inventory.consume_item("mana"):
 				show_toast("No azure draughts remain.  Mira sells more.")
 				return
-			_mana = minf(MAX_MANA, _mana + 40.0)
+			_mana = minf(_max_mana, _mana + 40.0)
 			_refresh_vitals()
 			_sync_item_stacks()
 			show_toast("The azure draught restores 40 mana.")
@@ -559,10 +574,10 @@ func _cast_skill(skill_id: String) -> bool:
 	# owns (vitals and travel). Damage, projectiles and poses belong to the hero.
 	match str(skill.get("effect", "")):
 		"heal":
-			_health = minf(MAX_HEALTH, _health + float(skill.get("amount", 0.0)))
+			_health = minf(_max_health, _health + float(skill.get("amount", 0.0)))
 			_refresh_vitals()
 		"mana":
-			_mana = minf(MAX_MANA, _mana + float(skill.get("amount", 0.0)))
+			_mana = minf(_max_mana, _mana + float(skill.get("amount", 0.0)))
 			_refresh_vitals()
 		"recall":
 			_player.call("return_to_spawn")
@@ -583,6 +598,8 @@ func _show_skills() -> void:
 	_open_overlay(_skill_list as OverlayPanel)
 
 func _school_hint() -> String:
+	if not _allowed_school.is_empty() and SKILL_LIBRARY.SCHOOLS.has(_allowed_school):
+		return _allowed_school
 	if _player == null:
 		return "sword"
 	var weapon := str(_player.get("equipped_weapon"))
@@ -606,8 +623,12 @@ func _on_slot_assign_requested(index: int) -> void:
 func _on_skill_chosen(skill_id: String, slot_index: int) -> void:
 	if not SKILL_LIBRARY.is_valid_skill(skill_id):
 		return
+	if SKILL_LIBRARY.school_of(skill_id) != _allowed_school:
+		show_toast("That talent belongs to another school.  Your studies follow the %s." % str(SKILL_LIBRARY.school(_allowed_school).get("name", _allowed_school)))
+		return
 	_assign_skill(slot_index, skill_id)
 	_skill_list.set_assigned(_assigned_skills())
+	_save_run()
 
 func _on_skill_clear_requested(slot_index: int) -> void:
 	if slot_index < 0 or slot_index >= SLOT_COUNT:
@@ -682,17 +703,19 @@ func _on_weapon_changed(weapon_id: String) -> void:
 	if _player != null:
 		_inventory.set_equipped_offhand(str(_player.get("equipped_offhand")))
 	var data: Dictionary = WeaponLibrary.WEAPONS.get(weapon_id, {})
-	if not data.is_empty():
+	if not data.is_empty() and not _loading_run:
 		show_toast("Equipped %s.  Open the satchel to choose another." % str(data["name"]))
 
 func _on_offhand_changed(offhand_id: String) -> void:
 	_inventory.set_equipped_offhand(offhand_id)
 	_refresh_journal()
 	var data: Dictionary = OFFHAND_LIBRARY.get_offhand(offhand_id)
-	if not data.is_empty():
+	if not data.is_empty() and not _loading_run:
 		show_toast("Off-hand: %s.  %s" % [str(data["name"]), str(data["effect"])])
-	if _player != null and str(_player.get("equipped_weapon")) in ["bow", "kitsune"]:
+	if _player != null and str(_player.get("equipped_weapon")) in ["bow", "kitsune"] and not _loading_run:
 		show_toast("%s is stowed: this weapon needs both hands." % str(data.get("name", "The off-hand")))
+	if not _loading_run:
+		_save_run()
 
 func _on_attack_started(weapon_id: String) -> void:
 	_update_weapon_label(weapon_id)
@@ -707,14 +730,14 @@ func _update_weapon_label(weapon_id: String) -> void:
 func _on_enemy_hit(target: Node, amount: float) -> void:
 	if target != null and target.is_in_group("training_dummy") and _quest_stage == 1:
 		_dummies_hit += 1
-		_xp = minf(MAX_XP, _xp + amount * 3.0)
+		_add_xp(amount * 3.0)
 		_refresh_progress()
 		if _dummies_hit >= 3:
 			_quest_stage = 2
 			show_toast("Three clean strikes.  The Wayfarer is waiting by the well.")
 		_refresh_quest()
 	else:
-		_xp = minf(MAX_XP, _xp + amount * 3.0)
+		_add_xp(amount * 3.0)
 		_refresh_progress()
 	_refresh_journal()
 
@@ -735,7 +758,7 @@ func _damage(amount: float) -> void:
 	show_toast("You take %d damage.  (H / J to test)" % int(amount))
 
 func _heal(amount: float) -> void:
-	_health = minf(MAX_HEALTH, _health + amount)
+	_health = minf(_max_health, _health + amount)
 	_refresh_vitals()
 	show_toast("You recover %d health." % int(amount))
 
@@ -759,8 +782,19 @@ func _on_inventory_closed() -> void:
 func _on_inventory_weapon_selected(weapon_id: String) -> void:
 	if _player == null:
 		return
+	# Each wayfarer walks one road: the armory only answers for the hero's own
+	# arm, so a knight can never draw the bow.
+	if weapon_id != CharacterLibrary.weapon_of(_character_id):
+		var info: Dictionary = CharacterLibrary.get_character(_character_id)
+		show_toast("The %s answers only to %s.  Your arm is the %s." % [
+			str(WeaponLibrary.WEAPONS.get(weapon_id, {}).get("name", weapon_id)),
+			_character_name,
+			str(info.get("weapon", "sword")),
+		])
+		return
 	_player.call("equip_weapon", weapon_id)
 	_inventory.set_equipped(weapon_id)
+	_save_run()
 
 func _on_inventory_offhand_selected(offhand_id: String) -> void:
 	if _player == null:
@@ -771,37 +805,37 @@ func _on_inventory_offhand_selected(offhand_id: String) -> void:
 func _on_inventory_item_used(item_id: String) -> void:
 	match item_id:
 		"health":
-			if _health >= MAX_HEALTH - 0.5:
+			if _health >= _max_health - 0.5:
 				show_toast("Your health is already full.")
 				return
 			if _inventory.get_item_count(item_id) <= 0:
 				show_toast("No crimson draughts remain.  Mira sells more.")
 				return
-			_health = minf(MAX_HEALTH, _health + 45.0)
+			_health = minf(_max_health, _health + 45.0)
 			_refresh_vitals()
 			_inventory.consume_item(item_id)
 			_sync_item_stacks()
 			show_toast("The crimson draught restores 45 health.")
 		"mana":
-			if _mana >= MAX_MANA - 0.5:
+			if _mana >= _max_mana - 0.5:
 				show_toast("Your mana is already full.")
 				return
 			if _inventory.get_item_count(item_id) <= 0:
 				show_toast("No azure draughts remain.  Mira sells more.")
 				return
-			_mana = minf(MAX_MANA, _mana + 40.0)
+			_mana = minf(_max_mana, _mana + 40.0)
 			_refresh_vitals()
 			_inventory.consume_item(item_id)
 			_sync_item_stacks()
 			show_toast("The azure draught restores 40 mana.")
 		"waybread":
-			if _health >= MAX_HEALTH - 0.5:
+			if _health >= _max_health - 0.5:
 				show_toast("Your health is already full.")
 				return
 			if _inventory.get_item_count(item_id) <= 0:
 				show_toast("The waybread is gone.")
 				return
-			_health = minf(MAX_HEALTH, _health + 25.0)
+			_health = minf(_max_health, _health + 25.0)
 			_refresh_vitals()
 			_inventory.consume_item(item_id)
 			_sync_item_stacks()
@@ -1002,7 +1036,7 @@ func show_wayfarer_dialogue() -> void:
 				{"id": "close", "label": "Not yet"},
 			]
 		_:
-			body = "The well is deep and the road is long, but you've earned a warm fire and a full purse. Go well, Aldric. The Reach will remember you."
+			body = "The well is deep and the road is long, but you've earned a warm fire and a full purse. Go well, %s. The Reach will remember you." % _character_name
 			choices = [{"id": "close", "label": "Go well"}]
 	_open_dialogue("The Wayfarer", body, choices)
 
@@ -1098,7 +1132,7 @@ func _show_elder_dialogue() -> void:
 		_:
 			_open_dialogue(
 				"Elder Rowan",
-				"The gate stands open and the road is quiet. You have done Hearthmere a great service, Aldric. Warm your hands at any fire in this town, and know that the Reach remembers.",
+				"The gate stands open and the road is quiet. You have done Hearthmere a great service, %s. Warm your hands at any fire in this town, and know that the Reach remembers." % _character_name,
 				[{"id": "close", "label": "Go well, Elder"}]
 			)
 
@@ -1195,7 +1229,7 @@ func _on_dialogue_choice(choice_id: String) -> void:
 			if _quest_stage == 2:
 				_quest_stage = 3
 				_gold += QUEST_REWARD
-				_xp = minf(MAX_XP, _xp + 500.0)
+				_add_xp(500.0)
 				_refresh_progress()
 				_refresh_quest()
 				show_toast("The Wayfarer pays you %d gold.  The errand is complete." % QUEST_REWARD)
@@ -1215,7 +1249,7 @@ func _on_dialogue_choice(choice_id: String) -> void:
 			if _story_stage == 2:
 				_story_stage = 3
 				_gold += STORY_REWARD_A_GOLD
-				_xp = minf(MAX_XP, _xp + STORY_REWARD_A_XP)
+				_add_xp(STORY_REWARD_A_XP)
 				_refresh_progress()
 				_refresh_quest()
 				show_toast("Elder Rowan pays you %d gold and %s experience." % [STORY_REWARD_A_GOLD, _format_number(STORY_REWARD_A_XP)])
@@ -1228,13 +1262,13 @@ func _on_dialogue_choice(choice_id: String) -> void:
 			if _story_stage == 5:
 				_story_stage = 6
 				_gold += STORY_REWARD_B_GOLD
-				_xp = minf(MAX_XP, _xp + STORY_REWARD_B_XP)
+				_add_xp(STORY_REWARD_B_XP)
 				_refresh_progress()
 				_refresh_quest()
 				show_toast("Hearthmere pays its debt: %d gold and %s experience." % [STORY_REWARD_B_GOLD, _format_number(STORY_REWARD_B_XP)])
 			_dialogue.present(
 				"Elder Rowan",
-				"The gate stands open and the road is quiet. You have done Hearthmere a great service, Aldric. Warm your hands at any fire in this town, and know that the Reach remembers.",
+				"The gate stands open and the road is quiet. You have done Hearthmere a great service, %s. Warm your hands at any fire in this town, and know that the Reach remembers." % _character_name,
 				[{"id": "close", "label": "Go well, Elder"}]
 			)
 		"tomas_accept":
@@ -1252,7 +1286,7 @@ func _on_dialogue_choice(choice_id: String) -> void:
 			if _side_stage == 2:
 				_side_stage = 3
 				_gold += SIDE_REWARD_GOLD
-				_xp = minf(MAX_XP, _xp + SIDE_REWARD_XP)
+				_add_xp(SIDE_REWARD_XP)
 				_refresh_progress()
 				_refresh_quest()
 				show_toast("Tomas pays you %d gold and %s experience." % [SIDE_REWARD_GOLD, _format_number(SIDE_REWARD_XP)])
@@ -1351,6 +1385,7 @@ func _on_shop_purchase(shop_id: String, item_id: String) -> void:
 	_purchases[shop_id] = ledger
 	_refresh_progress()
 	_sync_item_stacks()
+	_save_run()
 	_open_shop(shop_id)
 	if item_id == "whetstone":
 		show_toast("Bran hones your weapon.  +2 attack power.")
@@ -1369,7 +1404,7 @@ func on_monster_killed(monster: Node, variant: String, is_boss: bool, xp_reward:
 	if _player != null:
 		xp_gain *= float(_player.call("xp_multiplier"))
 		gold_gain = roundi(float(gold_gain) * float(_player.call("gold_multiplier")))
-	_xp = minf(MAX_XP, _xp + xp_gain)
+	_add_xp(xp_gain)
 	_gold += gold_gain
 	var notes: Array[String] = []
 
@@ -1468,8 +1503,8 @@ func _fall() -> void:
 		return
 	var lost := mini(_gold, DEATH_GOLD_LOSS)
 	_gold -= lost
-	_health = MAX_HEALTH * 0.6
-	_mana = MAX_MANA * 0.5
+	_health = _max_health * 0.6
+	_mana = _max_mana * 0.5
 	_dead = false
 	_falling = false
 	if _player != null:
@@ -1481,6 +1516,184 @@ func _fall() -> void:
 	if lost > 0:
 		message += "  You lost %d gold on the road." % lost
 	show_toast(message, 3.2)
+	_save_run()
+
+# ---------------------------------------------------------------------------
+# Levels and the saved journey
+# ---------------------------------------------------------------------------
+
+## XP needed to advance from `level` to `level + 1`. Level 1 needs 650, and
+## every level after asks 500 more than the last.
+func xp_needed_for_level(level: int) -> float:
+	return XP_BASE + XP_GROWTH * float(maxi(1, level) - 1)
+
+func _add_xp(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	_xp += amount
+	while _xp >= _max_xp:
+		_xp -= _max_xp
+		_level += 1
+		_apply_level_up()
+
+## Each level: more health, more mana, a heavier arm, thicker hide — and a full
+## recovery, the classic reward for the climb.
+func _apply_level_up() -> void:
+	_max_health += HEALTH_PER_LEVEL
+	_max_mana += MANA_PER_LEVEL
+	_max_xp = xp_needed_for_level(_level)
+	_health = _max_health
+	_mana = _max_mana
+	if _player != null:
+		_player.call("upgrade_weapon_power", POWER_PER_LEVEL)
+		_player.call("upgrade_mitigation", MITIGATION_PER_LEVEL)
+	if not _loading_run:
+		show_toast("LEVEL %d!  Health, mana and arm strength grow." % _level, 3.2)
+	_refresh_vitals()
+	_refresh_progress()
+	_save_run()
+
+## Called once from `_ready`: pulls SaveManager's active run into the HUD —
+## class, name, level, gear, skills, satchel, quest and shop progress, and the
+## shrine/Warden state — then locks the armory and skill library to the hero's
+## path. A debug run straight from the editor (no active save) is untouched.
+func _apply_run_data() -> void:
+	if not SaveManager.active_exists():
+		return
+	_loading_run = true
+	var data: Dictionary = SaveManager.active_data
+	_character_id = str(data.get("character_id", "knight"))
+	var info: Dictionary = CharacterLibrary.get_character(_character_id)
+	_character_name = str(data.get("character_name", info.get("name", "Aldric")))
+	_allowed_school = str(info.get("school", "sword"))
+
+	_level = maxi(1, int(data.get("level", 1)))
+	_xp = maxf(0.0, float(data.get("xp", 0.0)))
+	_max_health = BASE_MAX_HEALTH + HEALTH_PER_LEVEL * float(_level - 1)
+	_max_mana = BASE_MAX_MANA + MANA_PER_LEVEL * float(_level - 1)
+	_max_xp = xp_needed_for_level(_level)
+	_gold = maxi(0, int(data.get("gold", 0)))
+
+	var weapon := str(data.get("weapon", CharacterLibrary.weapon_of(_character_id)))
+	if _player != null:
+		_player.call("equip_weapon", weapon)
+		var offhand := str(data.get("offhand", ""))
+		if not offhand.is_empty() and OFFHAND_LIBRARY.has(offhand):
+			_player.call("equip_offhand", offhand)
+		# Rebuild the standing bonuses: level growth, then Bran's forge work.
+		if _level > 1:
+			_player.call("upgrade_weapon_power", POWER_PER_LEVEL * float(_level - 1))
+			_player.call("upgrade_mitigation", MITIGATION_PER_LEVEL * float(_level - 1))
+		var purchases: Dictionary = data.get("purchases", {})
+		var bran: Dictionary = purchases.get("bran", {})
+		var whetstones := int(bran.get("whetstone", 0))
+		var rivets := int(bran.get("rivet", 0))
+		if whetstones > 0:
+			_player.call("upgrade_weapon_power", 2.0 * float(whetstones))
+		if rivets > 0:
+			_player.call("upgrade_mitigation", 0.03 * float(rivets))
+
+	var skills: Dictionary = data.get("skills", {})
+	for i in SLOT_COUNT:
+		var skill_id := str(skills.get(str(i + 1), ""))
+		if not skill_id.is_empty() and SKILL_LIBRARY.is_valid_skill(skill_id):
+			_set_slot_skill(i, skill_id)
+
+	_quest_stage = maxi(0, int(data.get("quest_stage", 0)))
+	_dummies_hit = maxi(0, int(data.get("dummies_hit", 0)))
+	_story_stage = maxi(0, int(data.get("story_stage", 0)))
+	_beasts_culled = maxi(0, int(data.get("beasts_culled", 0)))
+	_side_stage = maxi(0, int(data.get("side_stage", 0)))
+	_wolves_culled = maxi(0, int(data.get("wolves_culled", 0)))
+	_shrine_lit = bool(data.get("shrine_lit", false))
+	_boss_defeated = bool(data.get("boss_defeated", false))
+
+	_health = _max_health
+	_mana = _max_mana
+	var saved_health := float(data.get("health", -1.0))
+	if saved_health >= 0.0:
+		_health = clampf(saved_health, 1.0, _max_health)
+	var saved_mana := float(data.get("mana", -1.0))
+	if saved_mana >= 0.0:
+		_mana = clampf(saved_mana, 0.0, _max_mana)
+
+	var items: Dictionary = data.get("items", {})
+	if not items.is_empty():
+		_inventory.restore_items(items)
+
+	_inventory.set_allowed_weapons([CharacterLibrary.weapon_of(_character_id)])
+	if _skill_list != null and _skill_list.has_method("set_allowed_school"):
+		_skill_list.call("set_allowed_school", _allowed_school)
+
+	# The world remembers: a lit shrine wakes the Warden, a defeated Warden
+	# rests where it fell.
+	if _shrine_lit:
+		for boss in get_tree().get_nodes_in_group("enemy_boss"):
+			if is_instance_valid(boss) and boss.has_method("awaken"):
+				boss.call("awaken")
+	if _boss_defeated:
+		for boss in get_tree().get_nodes_in_group("enemy_boss"):
+			if is_instance_valid(boss) and boss.has_method("mark_defeated"):
+				boss.call("mark_defeated")
+
+	$Root/PlayerPanel/Name.text = _character_name
+	var class_label: Label = $Root/PlayerPanel/Class
+	if class_label != null:
+		class_label.text = "%s  ·  %s" % [str(info.get("title", "THE KNIGHT")), str(info.get("forte", ""))]
+
+	_refresh_vitals()
+	_refresh_progress()
+	_refresh_quest()
+	_refresh_journal()
+	_loading_run = false
+
+func _skills_snapshot() -> Dictionary:
+	var snapshot := {}
+	for i in SLOT_COUNT:
+		snapshot[str(i + 1)] = str(_slot_data[i].get("skill", ""))
+	return snapshot
+
+## Pushes the whole run back into SaveManager and writes the file. Called at
+## meaningful moments (quest changes, level-ups, purchases, death, quitting)
+## rather than every hit.
+func _save_run() -> void:
+	if _loading_run or not SaveManager.active_exists():
+		return
+	var purchases := {"mira": {}, "bran": {}}
+	for shop_id in _purchases.keys():
+		purchases[str(shop_id)] = (_purchases[shop_id] as Dictionary).duplicate()
+	var weapon := "sword"
+	var offhand := ""
+	if _player != null:
+		weapon = str(_player.get("equipped_weapon"))
+		offhand = str(_player.get("equipped_offhand"))
+	SaveManager.save_progress({
+		"character_id": _character_id,
+		"character_name": _character_name,
+		"level": _level,
+		"xp": _xp,
+		"health": _health,
+		"mana": _mana,
+		"gold": _gold,
+		"weapon": weapon,
+		"offhand": offhand,
+		"skills": _skills_snapshot(),
+		"items": _inventory.get_save_items(),
+		"quest_stage": _quest_stage,
+		"dummies_hit": _dummies_hit,
+		"story_stage": _story_stage,
+		"beasts_culled": _beasts_culled,
+		"side_stage": _side_stage,
+		"wolves_culled": _wolves_culled,
+		"shrine_lit": _shrine_lit,
+		"boss_defeated": _boss_defeated,
+		"purchases": purchases,
+	})
+
+func _on_save_requested() -> void:
+	_save_run()
+	show_toast("The journey is written down.  Continue from the title screen.", 2.8)
+	_pause.close_panel()
 
 # ---------------------------------------------------------------------------
 # HUD bookkeeping
@@ -1621,6 +1834,8 @@ func _refresh_quest() -> void:
 
 	_refresh_quest_markers()
 	_refresh_journal()
+	if not _loading_run:
+		_save_run()
 
 func _set_objective(label: Label, text: String, state: String) -> void:
 	if label == null:
@@ -1667,11 +1882,11 @@ func _process(delta: float) -> void:
 	_update_boss_bar()
 
 	var vitals_changed := false
-	if _health < MAX_HEALTH:
-		_health = minf(MAX_HEALTH, _health + 0.8 * delta)
+	if _health < _max_health:
+		_health = minf(_max_health, _health + 0.8 * delta)
 		vitals_changed = true
-	if _mana < MAX_MANA:
-		_mana = minf(MAX_MANA, _mana + 2.4 * delta)
+	if _mana < _max_mana:
+		_mana = minf(_max_mana, _mana + 2.4 * delta)
 		vitals_changed = true
 	if vitals_changed:
 		_refresh_vitals()
@@ -1682,14 +1897,14 @@ func _process(delta: float) -> void:
 			_toast.modulate.a = clampf(_toast_timer / 0.55, 0.0, 1.0)
 
 func _refresh_vitals() -> void:
-	_health_bar.set_values(_health, MAX_HEALTH)
-	_mana_bar.set_values(_mana, MAX_MANA)
-	_health_value.text = "%d / %d" % [roundi(_health), int(MAX_HEALTH)]
-	_mana_value.text = "%d / %d" % [roundi(_mana), int(MAX_MANA)]
+	_health_bar.set_values(_health, _max_health)
+	_mana_bar.set_values(_mana, _max_mana)
+	_health_value.text = "%d / %d" % [roundi(_health), int(_max_health)]
+	_mana_value.text = "%d / %d" % [roundi(_mana), int(_max_mana)]
 
 func _refresh_progress() -> void:
-	_xp_bar.set_values(_xp, MAX_XP)
-	_xp_value.text = "%s / %s XP" % [_format_number(_xp), _format_number(MAX_XP)]
+	_xp_bar.set_values(_xp, _max_xp)
+	_xp_value.text = "%s / %s XP" % [_format_number(_xp), _format_number(_max_xp)]
 	$Root/Quickbar/LevelLabel.text = "LEVEL %d" % _level
 	$Root/PlayerPanel/Level.text = "LEVEL %d" % _level
 	$Root/GoldPanel/GoldValue.text = _format_number(_gold)
