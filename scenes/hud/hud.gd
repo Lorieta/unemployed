@@ -1076,6 +1076,14 @@ func show_npc_dialogue(npc_id: String) -> void:
 				"The wayshrine used to burn green every dusk. My grandmother said it held the briars back. Now it is cold, and the Warden walks in the far clearing. If Rowan asks you to light it, do not go alone in the dark.",
 				[{"id": "close", "label": "I'll remember"}]
 			)
+		"hollis":
+			_show_hollis_dialogue()
+		"maelin":
+			_show_maelin_dialogue()
+		"pip":
+			_show_pip_dialogue()
+		"tilda":
+			_show_tilda_dialogue()
 		_:
 			_open_dialogue(
 				"Townsfolk",
@@ -1199,6 +1207,52 @@ func _show_tomas_dialogue() -> void:
 				"The field is quieter for your work, friend. If the briars send more, I know who to call.",
 				[{"id": "close", "label": "Good hunting, Tomas"}]
 			)
+
+func _show_hollis_dialogue() -> void:
+	var extra := " Rooms are clean, the stew is thick, and the fire is banked all night."
+	if _story_stage >= 3 and not _shrine_lit:
+		extra = " If you are for the shrine, sleep first. The briars do not respect a tired sword arm."
+	elif _shrine_lit:
+		extra = " Green light over the field and a full common room. Best trade I have had in years."
+	_open_dialogue(
+		"Hollis",
+		"The Wayfarer's Rest is the only roof in Hearthmere that welcomes coin after dark. Pull up a bench and let the road cool off your boots." + extra,
+		[{"id": "close", "label": "I'll keep you in mind"}]
+	)
+
+func _show_maelin_dialogue() -> void:
+	var extra := " The Reach remembers every kindness, even the small ones."
+	if _story_stage >= 3 and not _shrine_lit:
+		extra = " The shrine is dark, and the briars press close. Light it if Rowan sends you, and come back to give thanks."
+	elif _shrine_lit:
+		extra = " The green light is back on the horizon. I have not slept this well in a season."
+	_open_dialogue(
+		"Sister Maelin",
+		"This chapel has stood longer than the gate. I keep the candles lit for travelers who do not come back, and for the ones who do." + extra,
+		[{"id": "close", "label": "Walk in the light"}]
+	)
+
+func _show_pip_dialogue() -> void:
+	var extra := " The grey mare is gentle, but she bites if you offer her the wrong apple."
+	if _shrine_lit:
+		extra = " With the field quiet, Da sent me out to bring the herd in before dusk. First time in weeks."
+	_open_dialogue(
+		"Pip",
+		"I mind the stable. Brushing, feeding, mucking, mostly mucking. If you need a horse, ask Da, not me." + extra,
+		[{"id": "close", "label": "Mind the muck, Pip"}]
+	)
+
+func _show_tilda_dialogue() -> void:
+	var extra := " Wool, linen, and a good blue dye that does not run in the rain."
+	if _story_stage >= 3 and not _shrine_lit:
+		extra = " I have been weaving warm cloaks. If you mean to go south, take one."
+	elif _shrine_lit:
+		extra = " The market is busy again. I have sold more cloth this week than all last month."
+	_open_dialogue(
+		"Tilda",
+		"My loom faces the gate road, so I see everyone come and go. You are the one who has been thinning the field, aren't you?" + extra,
+		[{"id": "close", "label": "Keep the loom turning"}]
+	)
 
 func _open_dialogue(speaker: String, body: String, choices: Array) -> void:
 	if _dialogue == null:

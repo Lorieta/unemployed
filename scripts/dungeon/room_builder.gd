@@ -164,6 +164,11 @@ static func _build_room(root: Node3D, rooms: Array, index: int, doors: Array[Vec
 			wall_material
 		)
 
+	# Every opening gets a framed threshold and a pair of guttering sconces so
+	# the way onward is legible from across a dark hall.
+	for dir in doors:
+		_build_doorway(node, dir, half, biome)
+
 	var pillar_material := _mat(biome["pillar"], 0.9)
 	for sign_x in [-1, 1]:
 		for sign_z in [-1, 1]:
@@ -203,6 +208,20 @@ static func _build_room(root: Node3D, rooms: Array, index: int, doors: Array[Vec
 	# A restrained dressing layer: enough character to read as a place, sparse
 	# enough that every doorway and gate lane stays legible and walkable.
 	_dress_room(node, record, half, door_points, doors, biome, rng, escape)
+
+	# Lit floor studs point toward the way deeper in. Trap chambers already
+	# carry their own warning chevrons, so they are left alone.
+	var deeper_dir := Vector2i.ZERO
+	if not room["children"].is_empty():
+		var child: Dictionary = rooms[int(room["children"][0])]
+		var step: Vector2i = child["cell"] - room["cell"]
+		deeper_dir = Vector2i(signi(step.x), signi(step.y))
+	elif int(room["parent"]) >= 0:
+		var parent_room: Dictionary = rooms[int(room["parent"])]
+		var step: Vector2i = room["cell"] - parent_room["cell"]
+		deeper_dir = Vector2i(signi(step.x), signi(step.y))
+	if room["type"] != "trap":
+		_dress_route_marker(node, deeper_dir, half, biome)
 
 	match room["type"]:
 		"entrance":
@@ -398,6 +417,200 @@ static func _dress_room(node: Node3D, record: Dictionary, half: Vector2, door_po
 		_build_pillar_stump(node, spot, stump_material, rng)
 		record["blocked_points"].append(Vector3(spot.x, 0.0, spot.z))
 
+	# Votive candles and a small wall shrine: signs that someone once tended
+	# these halls. They sit high on the stone, clear of every walking lane.
+	for i in (0 if escape else rng.randi_range(1, 2)):
+		var candle_dir: Vector2i = Layout.DIRS[rng.randi_range(0, 3)]
+		var candle_along := rng.randf_range(-0.72, 0.72)
+		if doors.has(candle_dir) and absf(candle_along) < 0.62:
+			continue
+		_build_wall_candles(node, candle_dir, candle_along, half, biome, rng)
+
+	if not escape and String(record["type"]) != "trap" and rng.randf() < 0.7:
+		_build_wall_shrine(node, half, doors, biome, rng)
+
+	# A sarcophagus or a huddle of burial urns gives combat halls a reason to
+	# exist. Both are placed far from door lanes and recorded so monster, rune,
+	# trap and stair placement keeps its distance.
+	if not escape and String(record["type"]) == "combat":
+		if rng.randf() < 0.55:
+			var crypt_spot := _random_inner_point(half, door_points, record["blocked_points"], 4.2, rng, 14)
+			if crypt_spot != Vector3.ZERO:
+				var crypt_yaw := 0.0 if rng.randf() < 0.5 else PI * 0.5
+				_build_sarcophagus(node, crypt_spot, crypt_yaw, biome, rng)
+				record["blocked_points"].append(Vector3(crypt_spot.x, 0.0, crypt_spot.z))
+		else:
+			var urn_spot := _random_inner_point(half, door_points, record["blocked_points"], 3.2, rng, 10)
+			if urn_spot != Vector3.ZERO:
+				_build_urn_cluster(node, urn_spot, biome, rng)
+				record["blocked_points"].append(Vector3(urn_spot.x, 0.0, urn_spot.z))
+
+static func _build_doorway(node: Node3D, dir: Vector2i, half: Vector2, biome: Dictionary) -> void:
+	var axis_x := dir.x != 0
+	var along := half.x if axis_x else half.y
+	var stone := _mat(biome["pillar"], 0.92)
+	var stone_dark := _mat(Color(biome["pillar"]).darkened(0.16), 1.0)
+	var seam_material := _mat(biome["accent"], 0.55, 0.0, 0.55)
+	var metal := _mat(biome["metal"], 0.5, 0.65)
+	var torch := _mat(biome["torch"], 0.3, 0.0, 2.1)
+	var inward := Vector3(-dir.x, 0.0, -dir.y)
+	var perp := Vector3(0.0, 0.0, 1.0) if axis_x else Vector3(1.0, 0.0, 0.0)
+	var face := Vector3(dir.x * (along - 0.3), 0.0, dir.y * (along - 0.3))
+
+	# Worn threshold slab and a warm seam across it.
+	var slab_size := Vector3(1.0, 0.07, Layout.DOOR_WIDTH + 0.8) if axis_x else Vector3(Layout.DOOR_WIDTH + 0.8, 0.07, 1.0)
+	_add_mesh_box(node, face + Vector3(0.0, 0.035, 0.0), slab_size, stone_dark)
+	var seam_size := Vector3(0.1, 0.045, Layout.DOOR_WIDTH - 0.4) if axis_x else Vector3(Layout.DOOR_WIDTH - 0.4, 0.045, 0.1)
+	_add_mesh_box(node, face + Vector3(0.0, 0.075, 0.0), seam_size, seam_material)
+
+	for side in [-1, 1]:
+		var offset := perp * (Layout.DOOR_WIDTH * 0.5 + 0.44) * float(side)
+		# Carved jamb band framing the opening.
+		var band_size := Vector3(0.2, DOOR_TOP, 0.18) if axis_x else Vector3(0.18, DOOR_TOP, 0.2)
+		_add_mesh_box(node, face + offset + Vector3(0.0, DOOR_TOP * 0.5, 0.0), band_size, stone)
+		var cap_size := Vector3(0.36, 0.22, 0.34) if axis_x else Vector3(0.34, 0.22, 0.36)
+		_add_mesh_box(node, face + offset + Vector3(0.0, DOOR_TOP + 0.11, 0.0), cap_size, stone_dark)
+		# Iron bracket and votive flame, high enough to clear the hero.
+		var wall_spot := face + offset
+		var bracket_size := Vector3(0.28, 0.08, 0.08) if axis_x else Vector3(0.08, 0.08, 0.28)
+		_add_mesh_box(node, wall_spot + inward * 0.14 + Vector3(0.0, 2.5, 0.0), bracket_size, metal)
+		var cup := _add_mesh_cylinder(node, wall_spot + inward * 0.3 + Vector3(0.0, 2.52, 0.0), 0.09, 0.14, metal)
+		cup.rotation.x = PI * 0.5
+		var flame := _add_mesh_sphere(node, wall_spot + inward * 0.34 + Vector3(0.0, 2.7, 0.0), torch)
+		flame.scale = Vector3(0.55, 0.9, 0.55)
+		flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	# A glowing keystone glyph above the opening.
+	var glyph := _add_mesh_box(node, face + inward * 0.02 + Vector3(0.0, DOOR_TOP + 0.28, 0.0), Vector3(0.5, 0.16, 0.06) if axis_x else Vector3(0.06, 0.16, 0.5), seam_material)
+	glyph.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+## A short run of lit floor studs leading toward the deeper doorway. Purely a
+## decal layer: no colliders, no light cost, and it fades before the doorway.
+static func _dress_route_marker(node: Node3D, dir: Vector2i, half: Vector2, biome: Dictionary) -> void:
+	if dir == Vector2i.ZERO:
+		return
+	var glow := _mat(biome["accent"], 0.5, 0.0, 0.85)
+	var dim := _mat(Color(biome["accent"]).darkened(0.18), 0.6, 0.0, 0.45)
+	var dir3 := Vector3(float(dir.x), 0.0, float(dir.y)).normalized()
+	var reach := half.x if dir.x != 0 else half.y
+	for i in 3:
+		var distance := reach - 2.25 - 0.8 * float(i)
+		if distance < 1.4:
+			continue
+		var plate := _add_mesh_box(node, dir3 * distance + Vector3(0.0, 0.045, 0.0), Vector3(0.34, 0.025, 0.34), glow if i == 0 else dim)
+		plate.rotation.y = atan2(dir3.x, dir3.z)
+		plate.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if i == 0:
+			var core := _add_mesh_box(node, dir3 * distance + Vector3(0.0, 0.06, 0.0), Vector3(0.12, 0.02, 0.12), _mat(Color(0.95, 0.8, 0.45), 0.4, 0.0, 1.2))
+			core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+## A shelf of votive candles against one wall. Candles are emissive only so a
+## room full of them never turns into a room full of omni lights.
+static func _build_wall_candles(node: Node3D, dir: Vector2i, along: float, half: Vector2, biome: Dictionary, rng: RandomNumberGenerator) -> void:
+	var axis_x := dir.x != 0
+	var perp := Vector3(0.0, 0.0, 1.0) if axis_x else Vector3(1.0, 0.0, 0.0)
+	var extent := (half.y if axis_x else half.x) - 1.6
+	var wall := Vector3(dir.x * (half.x - 0.1), 0.0, dir.y * (half.y - 0.1)) + perp * along * extent
+	var inward := Vector3(-dir.x, 0.0, -dir.y) * 0.18
+	var shelf_size := Vector3(0.3, 0.07, 0.72) if axis_x else Vector3(0.72, 0.07, 0.3)
+	_add_mesh_box(node, wall + inward + Vector3(0.0, 1.92, 0.0), shelf_size, _mat(Color(0.2, 0.19, 0.17), 0.95))
+	var wax := _mat(Color(0.86, 0.81, 0.68), 0.85)
+	var flame_material := _mat(biome["torch"], 0.3, 0.0, 2.1)
+	for i in 3:
+		var offset := perp * (-0.22 + 0.22 * float(i)) + inward
+		var height := rng.randf_range(0.18, 0.34)
+		_add_mesh_cylinder(node, wall + offset + Vector3(0.0, 1.96 + height * 0.5, 0.0), 0.035, height, wax)
+		var flame := _add_mesh_sphere(node, wall + offset + Vector3(0.0, 1.98 + height, 0.0), flame_material)
+		flame.scale = Vector3(0.45, 0.85, 0.45)
+		flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var drip := _add_mesh_box(node, wall + inward + Vector3(0.0, 1.9, 0.0), Vector3(0.18, 0.03, 0.3) if axis_x else Vector3(0.3, 0.03, 0.18), wax)
+	drip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+## A carved wall niche with a votive bowl. Picks a wall with no doorway so it
+## never sits behind a gate or in a walking lane.
+static func _build_wall_shrine(node: Node3D, half: Vector2, doors: Array[Vector2i], biome: Dictionary, rng: RandomNumberGenerator) -> void:
+	var sides: Array[Vector2i] = []
+	for dir in Layout.DIRS:
+		if not doors.has(dir):
+			sides.append(dir)
+	if sides.is_empty():
+		return
+	var dir: Vector2i = sides[rng.randi_range(0, sides.size() - 1)]
+	var axis_x := dir.x != 0
+	var perp := Vector3(0.0, 0.0, 1.0) if axis_x else Vector3(1.0, 0.0, 0.0)
+	var extent := (half.y if axis_x else half.x) - 1.8
+	var along := rng.randf_range(-0.5, 0.5) * extent
+	var wall := Vector3(dir.x * (half.x - 0.08), 0.0, dir.y * (half.y - 0.08)) + perp * along
+	var inward := Vector3(-dir.x, 0.0, -dir.y) * 0.16
+	var stone := _mat(biome["pillar"], 0.92)
+	var stone_dark := _mat(Color(biome["pillar"]).darkened(0.2), 1.0)
+	var accent := _mat(biome["accent"], 0.55, 0.0, 0.7)
+	# Recessed relief panel.
+	_add_mesh_box(node, wall + inward + Vector3(0.0, 2.15, 0.0), Vector3(0.1, 0.9, 1.0) if axis_x else Vector3(1.0, 0.9, 0.1), stone_dark)
+	_add_mesh_box(node, wall + inward * 1.35 + Vector3(0.0, 2.15, 0.0), Vector3(0.06, 0.62, 0.68) if axis_x else Vector3(0.68, 0.62, 0.06), accent)
+	# Shelf and votive bowl.
+	_add_mesh_box(node, wall + inward + Vector3(0.0, 1.5, 0.0), Vector3(0.34, 0.08, 1.15) if axis_x else Vector3(1.15, 0.08, 0.34), stone)
+	var bowl := _add_mesh_cylinder(node, wall + inward * 1.3 + Vector3(0.0, 1.64, 0.0), 0.2, 0.1, accent)
+	bowl.scale = Vector3(1.0, 1.0, 1.0)
+	var flame_material := _mat(biome["torch"], 0.3, 0.0, 2.0)
+	for side in [-1, 1]:
+		var candle := wall + inward * 1.2 + perp * 0.38 * float(side) + Vector3(0.0, 1.62, 0.0)
+		_add_mesh_cylinder(node, candle, 0.035, 0.22, _mat(Color(0.86, 0.81, 0.68), 0.85))
+		var flame := _add_mesh_sphere(node, candle + Vector3(0.0, 0.17, 0.0), flame_material)
+		flame.scale = Vector3(0.45, 0.8, 0.45)
+		flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+## A stone coffin with a carved lid and a single guttering candle at its head.
+## Collidable, and recorded in blocked_points by the caller.
+static func _build_sarcophagus(node: Node3D, spot: Vector3, yaw: float, biome: Dictionary, rng: RandomNumberGenerator) -> void:
+	var stone := _mat(biome["pillar"], 0.9)
+	var stone_dark := _mat(Color(biome["pillar"]).darkened(0.18), 1.0)
+	var trim := _mat(biome["accent"], 0.55, 0.0, 0.4)
+	var body := StaticBody3D.new()
+	node.add_child(body)
+	body.position = spot
+	body.rotation.y = yaw + rng.randf_range(-0.08, 0.08)
+	_add_solid_box(body, Vector3(0.0, 0.42, 0.0), Vector3(1.18, 0.84, 2.15), stone)
+	var lid := _add_mesh_box(body, Vector3(0.0, 0.92, 0.0), Vector3(1.3, 0.18, 2.28), stone_dark)
+	lid.rotation.z = rng.randf_range(-0.04, 0.04)
+	_add_mesh_box(body, Vector3(0.0, 0.84, 0.0), Vector3(1.32, 0.05, 0.16), trim)
+	# A worn effigy on the lid.
+	_add_mesh_box(body, Vector3(0.0, 1.02, -0.25), Vector3(0.34, 0.08, 1.4), stone)
+	_add_mesh_sphere(body, Vector3(0.0, 1.1, 0.62), stone).scale = Vector3(0.36, 0.24, 0.34)
+	# Candle at the head end.
+	var head := body.position + body.basis * Vector3(0.0, 0.0, 1.16)
+	_add_mesh_cylinder(node, head + Vector3(0.0, 1.08, 0.0), 0.05, 0.24, _mat(Color(0.86, 0.81, 0.68), 0.85))
+	var flame := _add_mesh_sphere(node, head + Vector3(0.0, 1.27, 0.0), _mat(biome["torch"], 0.3, 0.0, 2.0))
+	flame.scale = Vector3(0.5, 0.9, 0.5)
+	flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+## A huddle of burial urns on a low plinth. Collidable; recorded by the caller.
+static func _build_urn_cluster(node: Node3D, spot: Vector3, biome: Dictionary, rng: RandomNumberGenerator) -> void:
+	var stone := _mat(biome["pillar"], 0.94)
+	var clay := _mat(Color(0.4, 0.3, 0.2), 0.95)
+	var clay_dark := _mat(Color(0.3, 0.22, 0.15), 1.0)
+	var body := StaticBody3D.new()
+	node.add_child(body)
+	body.position = spot
+	body.rotation.y = rng.randf() * TAU
+	_add_mesh_box(body, Vector3(0.0, 0.08, 0.0), Vector3(1.5, 0.16, 1.3), stone)
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(1.5, 1.0, 1.3)
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	collision.position = Vector3(0.0, 0.5, 0.0)
+	body.add_child(collision)
+	for i in 3:
+		var angle := float(i) * TAU / 3.0 + rng.randf_range(-0.2, 0.2)
+		var offset := Vector3(cos(angle) * 0.32, 0.0, sin(angle) * 0.32)
+		var height := rng.randf_range(0.5, 0.8)
+		var urn := _add_mesh_cylinder(body, Vector3(offset.x, 0.16 + height * 0.5, offset.z), 0.19, height, clay if i != 1 else clay_dark)
+		urn.scale = Vector3(1.0, 1.0, 0.86)
+		_add_mesh_cylinder(body, Vector3(offset.x, 0.16 + height + 0.05, offset.z), 0.1, 0.12, clay_dark)
+		if i == 0:
+			var lip := _add_mesh_cylinder(body, Vector3(offset.x, 0.16 + height + 0.12, offset.z), 0.13, 0.05, clay_dark)
+			lip.scale = Vector3(1.0, 1.0, 0.86)
+
 static func _build_bone_pile(parent: Node3D, spot: Vector3, material: StandardMaterial3D, rng: RandomNumberGenerator) -> void:
 	var pivot := Node3D.new()
 	parent.add_child(pivot)
@@ -511,6 +724,13 @@ static func _dress_corridor(corridor: Node3D, mid: Vector3, length: float, axis_
 		light.position = wall_face + Vector3(-perp3.x * 0.5 * float(side), 2.4, -perp3.z * 0.5 * float(side))
 		corridor.add_child(light)
 
+	# A worn guide ring in the middle of the passage, and a warm seam at the
+	# far end so the next opening reads from a distance.
+	var accent := _mat(biome["accent"], 0.55, 0.0, 0.35)
+	var guide := _add_mesh_cylinder(corridor, mid + Vector3(0.0, 0.02, 0.0), 0.62, 0.02, accent)
+	guide.scale = Vector3(1.0, 1.0, 0.7) if axis_x else Vector3(0.7, 1.0, 1.0)
+	guide.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
 	# Floor cracks and scuff marks down the passage.
 	var crack_material := _mat(biome["crack"], 1.0)
 	for i in 2:
@@ -580,6 +800,16 @@ static func _build_treasure(node: Node3D, biome: Dictionary) -> void:
 	for i in 5:
 		var coin := _add_mesh_sphere(node, Vector3(-0.3 + 0.15 * float(i), 0.16, -0.45), _mat(Color(0.9, 0.72, 0.3), 0.35, 0.9))
 		coin.scale = Vector3(0.48, 0.2, 0.48)
+	# A pair of candle stands flanking the chest make the cache read at a
+	# distance, even before the player's own torch reaches it.
+	var flame_material := _mat(biome["torch"], 0.3, 0.0, 2.0)
+	for side in [-1, 1]:
+		var stand := Vector3(1.35 * float(side), 0.0, 0.35)
+		_add_mesh_cylinder(node, stand + Vector3(0.0, 0.55, 0.0), 0.05, 1.1, _mat(Color(0.22, 0.21, 0.19), 0.5, 0.6))
+		_add_mesh_cylinder(node, stand + Vector3(0.0, 1.14, 0.0), 0.16, 0.06, _mat(biome["metal"], 0.5, 0.65))
+		var flame := _add_mesh_sphere(node, stand + Vector3(0.0, 1.32, 0.0), flame_material)
+		flame.scale = Vector3(0.55, 0.9, 0.55)
+		flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.82, 0.4)
 	light.light_energy = 0.9
@@ -602,6 +832,18 @@ static func _build_boss_dais(node: Node3D, biome: Dictionary) -> void:
 	# Deliberately no collider: the dais is a floor inlay, not a wall the hero
 	# has to fight. Gates, stairs and the warden all stay easy to reach.
 	node.add_child(dais)
+	# Four votive clusters on the diagonals ring the dais without touching the
+	# approach lanes or the boss's own foot.
+	var trim := _mat(biome["accent"], 0.55, 0.0, 0.6)
+	var flame_material := _mat(biome["torch"], 0.3, 0.0, 2.1)
+	for sx in [-1, 1]:
+		for sz in [-1, 1]:
+			var spot := Vector3(2.55 * float(sx), 0.0, 2.55 * float(sz))
+			_add_mesh_cylinder(node, spot + Vector3(0.0, 0.34, 0.0), 0.1, 0.68, _mat(Color(0.22, 0.21, 0.19), 0.5, 0.6))
+			_add_mesh_cylinder(node, spot + Vector3(0.0, 0.7, 0.0), 0.18, 0.06, trim)
+			var flame := _add_mesh_sphere(node, spot + Vector3(0.0, 0.9, 0.0), flame_material)
+			flame.scale = Vector3(0.6, 1.0, 0.6)
+			flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var light := OmniLight3D.new()
 	light.light_color = biome["torch"]
 	light.light_energy = 0.7
@@ -632,6 +874,27 @@ static func _build_entrance_gate(node: Node3D, biome: Dictionary) -> void:
 	var lintel := _add_mesh_box(node, Vector3(0.0, 3.55, 0.0), Vector3(5.6, 0.5, 0.7), stone)
 	lintel.rotation.z = 0.02
 	_add_mesh_prism(node, Vector3(0.0, 4.0, 0.0), stone_dark, Vector3(1.1, 0.7, 0.7))
+	# A carved name-board so the threshold reads as a threshold, not a wall.
+	var board := _add_mesh_box(node, Vector3(0.0, 3.58, 0.38), Vector3(3.2, 0.42, 0.08), stone_dark)
+	board.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var title := Label3D.new()
+	title.text = "THE UNDER-REACH"
+	title.font_size = 44
+	title.pixel_size = 0.0042
+	title.outline_size = 14
+	title.outline_modulate = Color(0.05, 0.04, 0.03, 1.0)
+	title.modulate = Color(0.82, 0.74, 0.52, 1.0)
+	title.position = Vector3(0.0, 3.58, 0.44)
+	title.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	node.add_child(title)
+	# Freestanding braziers flanking the arch light the approach.
+	for side in [-1, 1]:
+		var spot := Vector3(3.5 * float(side), 0.0, 0.5)
+		_add_mesh_cylinder(node, spot + Vector3(0.0, 0.5, 0.0), 0.1, 1.0, _mat(biome["metal"], 0.5, 0.65))
+		_add_mesh_cylinder(node, spot + Vector3(0.0, 1.04, 0.0), 0.28, 0.18, _mat(biome["metal"], 0.5, 0.65))
+		var bowl_flame := _add_mesh_sphere(node, spot + Vector3(0.0, 1.22, 0.0), torch)
+		bowl_flame.scale = Vector3(0.9, 1.3, 0.9)
+		bowl_flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# A worn mosaic ring on the floor at the threshold.
 	var mosaic := _add_mesh_cylinder(node, Vector3(0.0, 0.045, 0.0), 1.9, 0.03, _mat(biome["accent"], 0.9))
 	mosaic.scale.y = 1.0
@@ -893,6 +1156,21 @@ static func _build_gatehouse(gate: Node3D, biome: Dictionary, lock_mats: Array[S
 	_add_mesh_sphere(gate, Vector3(0.85, 5.0, 2.05), iron).scale = Vector3.ONE * 0.09
 	for k in 4:
 		_add_mesh_cylinder(gate, Vector3(0.55, 4.6 - 0.3 * float(k), 1.55), 0.03, 0.32, iron)
+	# A warm wash under the header and a lit threshold band: the gatehouse is
+	# always the brightest thing in a corridor, so a barred way is never missed.
+	var gate_light := OmniLight3D.new()
+	gate_light.light_color = biome["torch"]
+	gate_light.light_energy = 0.6
+	gate_light.omni_range = 6.0
+	gate_light.position = Vector3(0.0, 3.1, 0.0)
+	gate.add_child(gate_light)
+	var threshold := _add_mesh_box(
+		gate,
+		Vector3(0.0, 0.035, 0.0),
+		Vector3(2.2, 0.05, Layout.DOOR_WIDTH - 0.3),
+		_mat(biome["accent"], 0.55, 0.0, 0.4)
+	)
+	threshold.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 ## The portcullis itself: a grid of iron bars with two braces and spiked feet,
 ## hung on the moving slab so the manager can tween it up out of the way. The
@@ -987,8 +1265,31 @@ static func _build_exit_chamber(node: Node3D, biome: Dictionary) -> void:
 		_add_mesh_box(node, Vector3(2.4 * float(side), 1.7, 0.0), Vector3(0.6, 3.4, 0.6), stone)
 		_add_mesh_box(node, Vector3(2.4 * float(side), 3.55, 0.0), Vector3(0.9, 0.3, 0.9), glow)
 	_add_mesh_box(node, Vector3(0.0, 3.6, 0.0), Vector3(5.6, 0.4, 0.6), stone)
+	# A bright lintel legend so the ascent never reads as another dead end.
+	var title := Label3D.new()
+	title.text = "WAY OUT"
+	title.font_size = 52
+	title.pixel_size = 0.0044
+	title.outline_size = 15
+	title.outline_modulate = Color(0.04, 0.05, 0.04, 1.0)
+	title.modulate = Color(0.7, 1.0, 0.76, 1.0)
+	title.position = Vector3(0.0, 3.6, 0.36)
+	title.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	node.add_child(title)
+	# Standing lamps on both posts, plus a clean ring underfoot.
+	var flame_material := _mat(biome["torch"], 0.3, 0.0, 2.0)
+	for side in [-1, 1]:
+		var lamp := Vector3(2.4 * float(side), 0.0, 0.42)
+		_add_mesh_cylinder(node, lamp + Vector3(0.0, 0.5, 0.0), 0.06, 1.0, _mat(biome["metal"], 0.5, 0.65))
+		var flame := _add_mesh_sphere(node, lamp + Vector3(0.0, 1.1, 0.0), flame_material)
+		flame.scale = Vector3(0.6, 1.0, 0.6)
+		flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var ring := _add_mesh_cylinder(node, Vector3(0.0, 0.05, 0.0), 2.6, 0.04, glow)
 	ring.scale.y = 1.0
+	for i in 3:
+		var chevron := _add_mesh_box(node, Vector3(0.0, 0.075, -1.4 + 0.7 * float(i)), Vector3(0.5, 0.02, 0.12), glow)
+		chevron.rotation.y = 0.0
+		chevron.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var light := OmniLight3D.new()
 	light.light_color = biome["accent"]
 	light.light_energy = 1.1

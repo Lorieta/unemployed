@@ -196,6 +196,54 @@ hair_color = Color(0.24, 0.16, 0.1, 1)
 accent_color = Color(0.4, 0.34, 0.22, 1)
 carries_lantern = true
 
+[node name="Hollis" parent="NPCs" unique_id=1883402715 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.2, 0, 29.3)
+npc_id = "hollis"
+display_name = "Hollis"
+role = "merchant"
+robe_color = Color(0.36, 0.22, 0.19, 1)
+trim_color = Color(0.74, 0.57, 0.28, 1)
+skin_color = Color(0.79, 0.61, 0.45, 1)
+hair_color = Color(0.28, 0.17, 0.09, 1)
+accent_color = Color(0.52, 0.32, 0.18, 1)
+hat_style = "cap"
+
+[node name="Maelin" parent="NPCs" unique_id=1972184463 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0, 29.6)
+npc_id = "maelin"
+display_name = "Sister Maelin"
+role = "elder"
+robe_color = Color(0.3, 0.36, 0.33, 1)
+trim_color = Color(0.72, 0.7, 0.56, 1)
+skin_color = Color(0.74, 0.58, 0.44, 1)
+hair_color = Color(0.66, 0.64, 0.58, 1)
+accent_color = Color(0.38, 0.42, 0.34, 1)
+hat_style = "hood"
+
+[node name="Pip" parent="NPCs" unique_id=1338650912 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -16.6)
+npc_id = "pip"
+display_name = "Pip"
+role = "villager"
+robe_color = Color(0.42, 0.38, 0.24, 1)
+trim_color = Color(0.64, 0.5, 0.26, 1)
+skin_color = Color(0.84, 0.68, 0.52, 1)
+hair_color = Color(0.5, 0.32, 0.14, 1)
+accent_color = Color(0.58, 0.42, 0.2, 1)
+hat_style = "cap"
+
+[node name="Tilda" parent="NPCs" unique_id=1720913548 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.8, 0, -18.2)
+npc_id = "tilda"
+display_name = "Tilda"
+role = "merchant"
+robe_color = Color(0.3, 0.32, 0.4, 1)
+trim_color = Color(0.7, 0.58, 0.34, 1)
+skin_color = Color(0.82, 0.64, 0.48, 1)
+hair_color = Color(0.35, 0.2, 0.11, 1)
+accent_color = Color(0.48, 0.38, 0.24, 1)
+hat_style = "kerchief"
+
 [node name="Wayshrine" parent="." unique_id=1338103482 instance=ExtResource("10_shrine")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -74)
 
