@@ -11,19 +11,24 @@ signal used
 @export var ascent := false
 
 var unlocked := false
-var _runes: Array[StandardMaterial3D] = []
+var _rune_materials: Array[StandardMaterial3D] = []
 var _time := 0.0
 
 func _ready() -> void:
 	add_to_group("interactable")
-	var stone := _mat(Color(0.27, 0.27, 0.28), 0.92)
-	var iron := _mat(Color(0.3, 0.28, 0.25), 0.5, 0.5)
+	var stone := _stone(Color(0.27, 0.27, 0.28), 0.92)
+	var iron := _stone(Color(0.3, 0.28, 0.25), 0.5)
+	iron.metallic = 0.5
 	add_to_group("dungeon_stairs")
 	for i in 12:
 		var angle := float(i) * 0.55
 		var step_center := Vector3(cos(angle) * 1.5, 0.12 + float(i) * 0.26, sin(angle) * 1.5)
 		var step_size := Vector3(1.7, 0.24, 0.9)
 		_add_step(self, _yaw_rotate(step_center, -angle), _yaw_rotated_size(step_size, -angle), stone, -angle)
+		# A rune band laid into every third step — these are what light up.
+		if i % 3 == 0:
+			var band_center := _yaw_rotate(step_center + Vector3(0.0, 0.13, 0.0), -angle)
+			_add_step(self, band_center, Vector3(1.2, 0.03, 0.5), _rune(), -angle)
 	var base := _add_mesh_cylinder(self, Vector3(0.0, -0.2, 0.0), 2.4, 0.4, iron)
 	base.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var light := OmniLight3D.new()
@@ -40,7 +45,7 @@ func unlock() -> void:
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector3.ONE * 1.04, 0.4)
 	tween.tween_property(self, "scale", Vector3.ONE, 0.3)
-	for material in _runes:
+	for material in _rune_materials:
 		material.emission_enabled = true
 		material.emission = Color(0.55, 0.75, 1.0)
 		material.emission_energy_multiplier = 1.4
@@ -62,15 +67,18 @@ func _process(delta: float) -> void:
 	_time += delta
 	if not unlocked:
 		return
-	for i in _runes.size():
-		_runes[i].emission_energy_multiplier = 1.3 + sin(_time * 2.4 + float(i)) * 0.35
+	for i in _rune_materials.size():
+		_rune_materials[i].emission_energy_multiplier = 1.3 + sin(_time * 2.4 + float(i)) * 0.35
 
-func _mat(color: Color, roughness: float, metallic := 0.0) -> StandardMaterial3D:
+func _stone(color: Color, roughness: float) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = roughness
-	material.metallic = metallic
-	_runes.append(material)
+	return material
+
+func _rune() -> StandardMaterial3D:
+	var material := _stone(Color(0.2, 0.22, 0.26), 0.6)
+	_rune_materials.append(material)
 	return material
 
 func _yaw_rotate(offset: Vector3, angle: float) -> Vector3:

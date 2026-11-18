@@ -455,6 +455,15 @@ var movement_locked := false
 var _weapon_power := 0.0
 var _mitigation := 0.0
 
+## Temporary dungeon-rune buffs. Each kind has its own expiry so a haste rune
+## picked up mid-way through a power rune's lifetime doesn't cut it short.
+var _buff_power := 0.0
+var _buff_mitigation := 0.0
+var _buff_speed := 1.0
+var _buff_regen := 0.0
+var _buff_expiry := {}
+var _buff_aura: OmniLight3D
+
 var _upper_leg_length := 0.0
 var _lower_leg_length := 0.0
 var _foot_drop := 0.0
@@ -601,6 +610,7 @@ func _broadcast_initial_state() -> void:
 
 func _physics_process(delta: float) -> void:
 	_attack_cooldown = maxf(0.0, _attack_cooldown - delta)
+	_update_buffs(delta)
 	_update_attack(delta)
 	_update_skill(delta)
 	_update_wisps(delta)
@@ -619,7 +629,7 @@ func _physics_process(delta: float) -> void:
 		velocity.z = _dash_direction.z * DASH_SPEED
 		rotation.y = atan2(-_dash_direction.x, -_dash_direction.z)
 	else:
-		var top_speed := run_speed if Input.is_action_pressed("sprint") else walk_speed
+		var top_speed := (run_speed if Input.is_action_pressed("sprint") else walk_speed) * _buff_speed
 		if _attack_active:
 			top_speed *= 0.35
 		if _skill_active:
@@ -676,14 +686,19 @@ func _scan_interactions(delta: float) -> void:
 	_interaction_scan = 0.18
 
 	var best: Node3D = null
-	var best_distance := interaction_range
+	var best_distance := INF
 	for candidate in get_tree().get_nodes_in_group("interactable"):
 		if not is_instance_valid(candidate) or not candidate is Node3D:
 			continue
 		if candidate.has_method("can_interact") and not candidate.can_interact():
 			continue
+		# Most props use the hero's reach, but big fixtures like the dungeon
+		# ring can advertise a wider interaction radius.
+		var reach := interaction_range
+		if candidate.has_method("get_interaction_range"):
+			reach = float(candidate.call("get_interaction_range"))
 		var distance := global_position.distance_to((candidate as Node3D).global_position)
-		if distance < best_distance:
+		if distance <= reach and distance < best_distance:
 			best_distance = distance
 			best = candidate as Node3D
 
@@ -751,7 +766,7 @@ func offhand_bonus(key: String, fallback := 0.0) -> float:
 ## carried off-hand. A shield blunts every blow and turns aside much more while
 ## guarding; the lantern steadies the arm a little further.
 func mitigate_damage(amount: float) -> float:
-	var reduction := _mitigation
+	var reduction := _mitigation + _buff_mitigation
 	if offhand_in_use():
 		reduction += offhand_bonus("damage_reduction", 0.0)
 		if is_guarding():
@@ -768,6 +783,89 @@ func upgrade_weapon_power(amount: float) -> float:
 func upgrade_mitigation(amount: float) -> float:
 	_mitigation += amount
 	return _mitigation
+
+## ---------------------------------------------------------------------------
+## Temporary rune buffs. Dungeon rune stones call `apply_buff` when the hero
+## activates them; each kind runs on its own clock so overlapping runes stack
+## instead of stepping on each other. A faint tinted aura marks the active buff.
+## ---------------------------------------------------------------------------
+
+const BUFF_AURA_COLORS := {
+	"power": Color(1.0, 0.55, 0.25),
+	"haste": Color(0.45, 1.0, 0.65),
+	"ward": Color(0.45, 0.7, 1.0),
+	"mend": Color(1.0, 0.75, 0.85),
+}
+
+func apply_buff(kind: String, amount: float, duration: float) -> void:
+	match kind:
+		"power":
+			_buff_power += amount
+		"haste":
+			_buff_speed += amount
+		"ward":
+			_buff_mitigation += amount
+		"mend":
+			_buff_regen += amount
+		_:
+			return
+	_buff_expiry[kind] = maxf(float(_buff_expiry.get(kind, 0.0)), duration)
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud != null and hud.has_method("show_toast"):
+		hud.call("show_toast", "Rune of %s surges through you!" % kind.capitalize(), 2.6)
+	_light_buff_aura(kind)
+
+func _update_buffs(delta: float) -> void:
+	if _buff_expiry.is_empty():
+		return
+	var expired: Array[String] = []
+	for kind in _buff_expiry:
+		_buff_expiry[kind] = float(_buff_expiry[kind]) - delta
+		if float(_buff_expiry[kind]) <= 0.0:
+			expired.append(kind)
+	for kind in expired:
+		_buff_expiry.erase(kind)
+		match kind:
+			"power":
+				_buff_power = 0.0
+			"haste":
+				_buff_speed = 1.0
+			"ward":
+				_buff_mitigation = 0.0
+			"mend":
+				_buff_regen = 0.0
+	if _buff_regen > 0.0:
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud != null and hud.has_method("_heal"):
+			hud.call("_heal", _buff_regen * delta)
+	_refresh_buff_aura()
+
+func _light_buff_aura(kind: String) -> void:
+	if _buff_aura == null or not is_instance_valid(_buff_aura):
+		_buff_aura = OmniLight3D.new()
+		_buff_aura.position = Vector3(0.0, 0.6, 0.0)
+		_buff_aura.omni_range = 3.2
+		add_child(_buff_aura)
+	var color: Color = BUFF_AURA_COLORS.get(kind, Color(1.0, 1.0, 1.0))
+	_buff_aura.light_color = color
+	_buff_aura.light_energy = 0.9
+
+func _refresh_buff_aura() -> void:
+	if _buff_aura == null or not is_instance_valid(_buff_aura):
+		return
+	if _buff_expiry.is_empty():
+		_buff_aura.queue_free()
+		_buff_aura = null
+		return
+	var strongest := 0.0
+	var color := Color(1.0, 1.0, 1.0)
+	for kind in _buff_expiry:
+		var remaining := float(_buff_expiry[kind])
+		if remaining > strongest:
+			strongest = remaining
+			color = BUFF_AURA_COLORS.get(kind, color)
+	_buff_aura.light_color = color
+	_buff_aura.light_energy = 0.55 + 0.35 * clampf(strongest / 10.0, 0.0, 1.0)
 
 func weapon_power_bonus() -> float:
 	return _weapon_power
@@ -1177,8 +1275,8 @@ func _update_orbs(delta: float) -> void:
 
 func _melee_strike(reach: float, damage: float, min_dot: float, poison_damage := 0.0, poison_duration := 0.0) -> void:
 	var forward := -global_transform.basis.z
-	var dealt := (damage + _weapon_power) * offhand_damage_multiplier("melee")
-	var lingering := (poison_damage + _weapon_power * 0.25) * offhand_damage_multiplier("melee")
+	var dealt := (damage + _weapon_power + _buff_power) * offhand_damage_multiplier("melee")
+	var lingering := (poison_damage + (_weapon_power + _buff_power) * 0.25) * offhand_damage_multiplier("melee")
 	for candidate in _hostiles():
 		if not is_instance_valid(candidate) or not candidate.has_method("take_damage"):
 			continue
@@ -1200,7 +1298,7 @@ func _melee_strike(reach: float, damage: float, min_dot: float, poison_damage :=
 ## length and width rather than a facing cone.
 func _line_strike(length: float, width: float, damage: float) -> void:
 	var forward := _aim_direction()
-	var dealt := (damage + _weapon_power) * offhand_damage_multiplier("melee")
+	var dealt := (damage + _weapon_power + _buff_power) * offhand_damage_multiplier("melee")
 	for candidate in _hostiles():
 		if not is_instance_valid(candidate) or not candidate is Node3D:
 			continue
@@ -1252,7 +1350,7 @@ func _lightning_strike(point: Vector3, damage: float, radius: float) -> void:
 	var parent := get_parent()
 	if parent == null:
 		return
-	var dealt := (damage + _weapon_power) * offhand_damage_multiplier("spell")
+	var dealt := (damage + _weapon_power + _buff_power) * offhand_damage_multiplier("spell")
 	var pillar := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = 0.16
@@ -1722,7 +1820,7 @@ func _spawn_cast_flash(spawn: Vector3, color: Color) -> void:
 
 func _fire_projectile(kind: String, damage: float, direction_override := Vector3.ZERO, options := {}, color_override := Color(0.0, 0.0, 0.0, 0.0)) -> void:
 	var target := _find_nearest_dummy(18.0)
-	var dealt := (damage + _weapon_power) * offhand_damage_multiplier("missile")
+	var dealt := (damage + _weapon_power + _buff_power) * offhand_damage_multiplier("missile")
 	var direction := _aim_direction()
 	if direction_override.length_squared() > 0.001:
 		direction = direction_override.normalized()

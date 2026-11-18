@@ -19,7 +19,26 @@ const ATTACK_TIMELINES := {
 	"volley": 1.05,
 	"pounce": 0.75,
 	"bolt": 0.7,
+	"nova": 1.1,
 }
+
+## Per-variant FX colors so every breed's magic reads differently — foxfire is
+## green, the barrows burn cold blue, the cinder folk burn orange.
+const VARIANT_THEME := {
+	"wisp": {"bolt": Color(0.5, 1.0, 0.78, 1.0), "bolt_glow": Color(0.4, 1.0, 0.7, 1.0)},
+	"cinder_imp": {"bolt": Color(1.0, 0.5, 0.22, 1.0), "bolt_glow": Color(1.0, 0.4, 0.15, 1.0)},
+	"briar_warden": {"arc": Color(1.0, 0.55, 0.25, 0.9), "ring": Color(1.0, 0.45, 0.2, 0.9), "bolt": Color(0.55, 0.85, 0.3, 1.0), "bolt_glow": Color(0.45, 0.85, 0.28, 1.0)},
+	"barrow_wight": {"arc": Color(0.6, 0.85, 1.0, 0.85)},
+	"barrow_king": {"arc": Color(0.55, 0.85, 1.0, 0.85), "ring": Color(0.5, 0.85, 1.0, 0.9), "bolt": Color(0.75, 0.9, 1.0, 1.0), "bolt_glow": Color(0.6, 0.85, 1.0, 1.0)},
+	"grave_knight": {"arc": Color(0.72, 0.78, 0.9, 0.85), "ring": Color(0.6, 0.7, 0.9, 0.9)},
+	"ash_revenant": {"arc": Color(1.0, 0.55, 0.25, 0.85), "ring": Color(1.0, 0.4, 0.15, 0.9), "bolt": Color(1.0, 0.65, 0.3, 1.0), "bolt_glow": Color(1.0, 0.5, 0.2, 1.0)},
+	"frost_wraith": {"arc": Color(0.55, 0.9, 1.0, 0.85), "ring": Color(0.6, 0.95, 1.0, 0.9), "bolt": Color(0.75, 0.95, 1.0, 1.0), "bolt_glow": Color(0.6, 0.9, 1.0, 1.0)},
+	"ember_tyrant": {"arc": Color(1.0, 0.45, 0.16, 0.9), "ring": Color(1.0, 0.32, 0.1, 0.95), "bolt": Color(1.0, 0.62, 0.25, 1.0), "bolt_glow": Color(1.0, 0.45, 0.15, 1.0)},
+}
+
+func _theme(key: String, fallback: Color) -> Color:
+	var theme: Dictionary = VARIANT_THEME.get(variant, {})
+	return theme.get(key, fallback) as Color
 
 @export var variant := "mossling"
 @export var display_name := "Mossling"
@@ -93,7 +112,7 @@ func _ready() -> void:
 	_spawn_position = global_position
 	_spawn_rotation = rotation.y
 	health = max_health
-	_wisp = variant == "wisp"
+	_wisp = variant == "wisp" or variant == "cinder_imp"
 	_collision = get_node_or_null("CollisionShape3D") as CollisionShape3D
 	_visual = Node3D.new()
 	_visual.name = "Visual"
@@ -116,6 +135,22 @@ func _build_visual() -> void:
 			_build_wisp()
 		"briar_warden":
 			_build_warden()
+		"ember_hound":
+			_build_ember_hound()
+		"cinder_imp":
+			_build_cinder_imp()
+		"barrow_wight":
+			_build_barrow_wight()
+		"barrow_king":
+			_build_barrow_king()
+		"grave_knight":
+			_build_warden()
+		"ash_revenant":
+			_build_barrow_king()
+		"frost_wraith":
+			_build_barrow_wight()
+		"ember_tyrant":
+			_build_barrow_king()
 		_:
 			_build_mossling()
 
@@ -284,6 +319,173 @@ func _build_warden() -> void:
 	light.position = Vector3(0.0, 2.1, -0.4)
 	_visual.add_child(light)
 
+## Ember Hound: a fire-cursed cousin of the briar wolf, molten mane and all.
+func _build_ember_hound() -> void:
+	_height = 1.2
+	_radius = 0.48
+	var body := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 0.72, 0.1), Color(0.16, 0.1, 0.08), Vector3(0.28, 0.18, 0.28))
+	body.scale = Vector3(1.0, 0.9, 2.2)
+	var chest := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 0.76, -0.42), Color(0.22, 0.12, 0.08), Vector3(0.28, 0.26, 0.28))
+	chest.scale = Vector3(1.0, 1.0, 1.15)
+	_head = Node3D.new()
+	_head.position = Vector3(0.0, 0.94, -0.58)
+	_visual.add_child(_head)
+	var head := _add_mesh(_head, "SphereMesh", Vector3(0.0, -0.05, -0.3), Color(0.24, 0.13, 0.08), Vector3(0.22, 0.19, 0.23))
+	head.scale = Vector3(0.95, 1.0, 1.15)
+	_add_mesh(_head, "SphereMesh", Vector3(0.0, -0.13, -0.54), Color(0.12, 0.07, 0.05), Vector3(0.11, 0.08, 0.11))
+	_add_glow_eye(Vector3(-0.08, 0.02, -0.42), Color(1.0, 0.55, 0.18), _head)
+	_add_glow_eye(Vector3(0.08, 0.02, -0.42), Color(1.0, 0.55, 0.18), _head)
+	for side in [-1, 1]:
+		var ear := _add_mesh(_head, "PrismMesh", Vector3(0.12 * side, 0.17, -0.24), Color(0.2, 0.11, 0.07), Vector3(0.12, 0.2, 0.08))
+		ear.rotation.y = 0.15 * side
+		for front in [-1, 1]:
+			for s2 in [-1, 1]:
+				var hip := Node3D.new()
+				hip.position = Vector3(0.2 * s2, 0.68, 0.3 * front)
+				hip.set_meta("phase", 0.0 if float(front) * float(s2) > 0.0 else PI)
+				hip.set_meta("rest", 0.08 * float(front))
+				_visual.add_child(hip)
+				_legs.append(hip)
+				_add_mesh(hip, "CylinderMesh", Vector3(0.0, -0.3, 0.0), Color(0.14, 0.09, 0.06), Vector3(0.07, 0.085, 0.6))
+		# A burning mane of ember spikes down the spine.
+		for i in 5:
+			var spike := _add_mesh(_visual, "PrismMesh", Vector3(0.0, 1.0 - float(i) * 0.04, -0.34 + float(i) * 0.2), Color(1.0, 0.42, 0.14), Vector3(0.09, 0.2 + 0.03 * float(i % 2), 0.07), true)
+			spike.rotation.z = 0.1 * float(side)
+	_tail = Node3D.new()
+	_tail.position = Vector3(0.0, 1.0, 0.42)
+	_visual.add_child(_tail)
+	var tail := _add_mesh(_tail, "CylinderMesh", Vector3(0.0, -0.15, 0.3), Color(0.16, 0.1, 0.07), Vector3(0.06, 0.02, 0.68))
+	tail.rotation.x = -1.1
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.5, 0.2)
+	light.light_energy = 0.5
+	light.omni_range = 2.6
+	light.position = Vector3(0.0, 0.9, -0.7)
+	_visual.add_child(light)
+
+## Cinder Imp: a floating knot of ember that lobs firebolts from range.
+func _build_cinder_imp() -> void:
+	_height = 1.15
+	_radius = 0.38
+	# Body and halo are tracked so the bolt charge can pulse them.
+	var body := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 1.05, 0.0), Color(0.5, 0.22, 0.12), Vector3(0.26, 0.24, 0.26), true)
+	_orb_meshes.append(body)
+	var halo := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 1.05, 0.0), Color(1.0, 0.45, 0.18), Vector3(0.46, 0.46, 0.46), true)
+	halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_orb_meshes.append(halo)
+	for side in [-1, 1]:
+		var horn := _add_mesh(_visual, "PrismMesh", Vector3(0.1 * side, 1.32, 0.02), Color(0.3, 0.14, 0.08), Vector3(0.07, 0.2, 0.07))
+		horn.rotation.z = -0.4 * side
+	_add_glow_eye(Vector3(-0.08, 1.12, -0.2), Color(1.0, 0.85, 0.4))
+	_add_glow_eye(Vector3(0.08, 1.12, -0.2), Color(1.0, 0.85, 0.4))
+	for side in [-1, 1]:
+		var shoulder := Node3D.new()
+		shoulder.position = Vector3(0.24 * side, 1.0, 0.0)
+		shoulder.set_meta("side", side)
+		shoulder.set_meta("rest_x", 0.15)
+		shoulder.set_meta("rest_z", 0.45 * side)
+		shoulder.set_meta("phase", PI if side < 0 else 0.0)
+		_visual.add_child(shoulder)
+		_arm_pivots.append(shoulder)
+		_add_mesh(shoulder, "CylinderMesh", Vector3(0.0, -0.11, 0.0), Color(0.34, 0.15, 0.09), Vector3(0.055, 0.05, 0.34))
+	# A tail of falling sparks.
+	for i in 3:
+		var spark := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 0.62 - float(i) * 0.17, 0.1), Color(1.0, 0.5, 0.2), Vector3(0.06 - 0.012 * float(i), 0.06 - 0.012 * float(i), 0.06), true)
+		spark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.55, 0.25)
+	light.light_energy = 1.1
+	light.omni_range = 3.0
+	light.position = Vector3(0.0, 1.05, 0.0)
+	_visual.add_child(light)
+
+## Barrow Wight: a gaunt armored shade with scythe arms and a pale sweep.
+func _build_barrow_wight() -> void:
+	_height = 2.2
+	_radius = 0.42
+	var body := _add_mesh(_visual, "CylinderMesh", Vector3(0.0, 1.05, 0.0), Color(0.15, 0.17, 0.22), Vector3(0.2, 0.26, 1.1))
+	body.scale = Vector3(1.0, 1.0, 0.8)
+	var chest := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 1.68, 0.0), Color(0.18, 0.2, 0.26), Vector3(0.24, 0.22, 0.2))
+	chest.scale = Vector3(1.0, 0.9, 0.75)
+	_head = Node3D.new()
+	_head.position = Vector3(0.0, 1.92, 0.0)
+	_visual.add_child(_head)
+	_add_mesh(_head, "SphereMesh", Vector3(0.0, 0.08, 0.0), Color(0.72, 0.76, 0.82), Vector3(0.15, 0.13, 0.15))
+	var hood := _add_mesh(_head, "PrismMesh", Vector3(0.0, 0.2, 0.03), Color(0.12, 0.14, 0.19), Vector3(0.34, 0.4, 0.3))
+	hood.rotation.x = 0.2
+	_add_glow_eye(Vector3(-0.06, 0.08, -0.12), Color(0.65, 0.9, 1.0), _head)
+	_add_glow_eye(Vector3(0.06, 0.08, -0.12), Color(0.65, 0.9, 1.0), _head)
+	# Scythe arms on shoulder pivots — the sweep pose drives these.
+	for side in [-1, 1]:
+		var shoulder := Node3D.new()
+		shoulder.position = Vector3(0.34 * side, 1.78, 0.0)
+		shoulder.set_meta("side", side)
+		shoulder.set_meta("rest_x", 0.15)
+		shoulder.set_meta("rest_z", 0.12 * side)
+		_visual.add_child(shoulder)
+		_arm_pivots.append(shoulder)
+		_add_mesh(shoulder, "CylinderMesh", Vector3(0.04 * side, -0.4, 0.0), Color(0.14, 0.16, 0.2), Vector3(0.06, 0.05, 0.9))
+		var blade := _add_mesh(shoulder, "PrismMesh", Vector3(0.08 * side, -0.88, -0.14), Color(0.68, 0.74, 0.8), Vector3(0.07, 0.5, 0.2))
+		blade.rotation.x = 0.5
+	# A ragged cloak of shadow panels.
+	for i in 6:
+		var angle := float(i) * TAU / 6.0
+		var panel := _add_mesh(_visual, "PrismMesh", Vector3(cos(angle) * 0.26, 0.75 + sin(float(i) * 1.7) * 0.12, sin(angle) * 0.24), Color(0.1, 0.11, 0.15), Vector3(0.2, 0.7, 0.08))
+		panel.rotation.y = angle
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.6, 0.8, 1.0)
+	light.light_energy = 0.55
+	light.omni_range = 2.8
+	light.position = Vector3(0.0, 1.6, 0.0)
+	_visual.add_child(light)
+
+## The Barrow King: a vast crowned wraith holding his mound in the far south.
+func _build_barrow_king() -> void:
+	_height = 3.1
+	_radius = 0.85
+	var cloak := _add_mesh(_visual, "CylinderMesh", Vector3(0.0, 1.3, 0.0), Color(0.09, 0.1, 0.13), Vector3(0.2, 0.95, 2.3))
+	cloak.scale = Vector3(1.0, 1.0, 0.85)
+	var chest := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 2.35, -0.05), Color(0.14, 0.15, 0.2), Vector3(0.42, 0.36, 0.34))
+	chest.scale = Vector3(1.0, 0.95, 0.8)
+	_head = Node3D.new()
+	_head.position = Vector3(0.0, 2.62, -0.05)
+	_visual.add_child(_head)
+	_add_mesh(_head, "SphereMesh", Vector3(0.0, 0.12, 0.0), Color(0.6, 0.66, 0.74), Vector3(0.19, 0.17, 0.19))
+	_add_glow_eye(Vector3(-0.08, 0.12, -0.16), Color(0.6, 1.0, 0.9), _head)
+	_add_glow_eye(Vector3(0.08, 0.12, -0.16), Color(0.6, 1.0, 0.9), _head)
+	# A crown of tomb spikes, tallest at the brow.
+	for i in 5:
+		var angle := (float(i) - 2.0) * 0.38
+		var spike := _add_mesh(_head, "PrismMesh", Vector3(sin(angle) * 0.14, 0.32, -cos(angle) * 0.1 + 0.06), Color(0.5, 0.56, 0.62), Vector3(0.07, 0.3 + 0.06 * float(2 - absi(i - 2)), 0.07))
+	for side in [-1, 1]:
+		var pauldron := _add_mesh(_visual, "SphereMesh", Vector3(0.62 * side, 2.52, 0.0), Color(0.4, 0.46, 0.54), Vector3(0.22, 0.18, 0.22))
+		pauldron.scale = Vector3(1.0, 0.7, 1.0)
+		var shoulder := Node3D.new()
+		shoulder.position = Vector3(0.66 * side, 2.38, 0.0)
+		shoulder.set_meta("side", side)
+		shoulder.set_meta("rest_x", 0.12)
+		shoulder.set_meta("rest_z", 0.14 * side)
+		_visual.add_child(shoulder)
+		_arm_pivots.append(shoulder)
+		_add_mesh(shoulder, "CylinderMesh", Vector3(0.1 * side, -0.62, 0.0), Color(0.12, 0.13, 0.17), Vector3(0.16, 0.12, 1.4))
+		var claw := _add_mesh(shoulder, "PrismMesh", Vector3(0.16 * side, -1.36, -0.12), Color(0.55, 0.62, 0.7), Vector3(0.14, 0.55, 0.14))
+		claw.rotation.z = 3.05 * side
+	# Tattered cloak hem and drifting grave-lights.
+	for i in 8:
+		var angle := float(i) * TAU / 8.0
+		var tatter := _add_mesh(_visual, "PrismMesh", Vector3(cos(angle) * 0.5, 0.5 + sin(float(i) * 2.1) * 0.18, sin(angle) * 0.45), Color(0.08, 0.09, 0.12), Vector3(0.24, 0.8, 0.1))
+		tatter.rotation.y = angle
+	for i in 3:
+		var angle := float(i) * TAU / 3.0 + 0.5
+		var grave_light := _add_mesh(_visual, "SphereMesh", Vector3(cos(angle) * 0.9, 0.7, sin(angle) * 0.85), Color(0.6, 0.95, 1.0), Vector3(0.08, 0.08, 0.08), true)
+		grave_light.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.55, 0.85, 1.0)
+	light.light_energy = 0.8
+	light.omni_range = 5.0
+	light.position = Vector3(0.0, 2.4, -0.3)
+	_visual.add_child(light)
+
 func _add_mesh(parent: Node3D, mesh_type: String, position: Vector3, color: Color, size: Vector3, emissive := false) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	var mesh: PrimitiveMesh
@@ -429,6 +631,12 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if dormant or _player == null:
+		# Named elites other than the Warden stir when the hero trespasses
+		# close enough — the Warden keeps its shrine-bound story.
+		if dormant and boss and variant != "briar_warden" \
+				and is_instance_valid(_player) \
+				and global_position.distance_to(_player.global_position) < 9.0:
+			awaken()
 		_idle(delta)
 		return
 
@@ -575,10 +783,12 @@ func _begin_attack() -> void:
 		_pounce_target = _player.global_position if target_ok else global_position
 	elif type == "slam" or type == "volley":
 		_special_cooldown = 4.5
+	elif type == "nova":
+		_special_cooldown = 5.0
 
-## Pick the attack this swing will perform. Wisps always lob bolts; the Warden
-## alternates its named specials (ground slam, thorn volley) on a cooldown and
-## sweeps otherwise; wolves pounce from a hop's distance and claw up close.
+## Pick the attack this swing will perform. Wisps and imps lob bolts; the bosses
+## alternate their named specials on a cooldown and sweep otherwise; wolves and
+## hounds pounce from a hop's distance and claw up close; wights scythe.
 func _choose_attack() -> String:
 	var distance := 999.0
 	if _player != null and is_instance_valid(_player):
@@ -587,18 +797,27 @@ func _choose_attack() -> String:
 		return "bolt"
 	if boss:
 		if _special_cooldown <= 0.0:
+			if variant == "barrow_king" or variant == "ember_tyrant":
+				return "nova" if distance <= 5.5 else "volley"
 			return "slam" if distance <= 4.2 else "volley"
 		return "sweep"
-	if variant == "briar_wolf" and _special_cooldown <= 0.0 and distance > attack_range * 1.05:
+	if variant == "barrow_wight" or variant == "frost_wraith" or variant == "grave_knight":
+		return "sweep"
+	if variant == "ash_revenant":
+		return "slam" if distance <= 4.2 else "volley"
+	if _is_wolf() and _special_cooldown <= 0.0 and distance > attack_range * 1.05:
 		return "pounce"
 	return "claw"
+
+func _is_wolf() -> bool:
+	return variant == "briar_wolf" or variant == "ember_hound"
 
 ## How close the hero must be before this monster starts a swing. Specials
 ## reach further than the basic strike so the boss can open from range.
 func _attack_trigger_range() -> float:
 	if boss and _special_cooldown <= 0.0:
 		return maxf(attack_range, 6.0)
-	if variant == "briar_wolf" and _special_cooldown <= 0.0:
+	if _is_wolf() and _special_cooldown <= 0.0:
 		return attack_range + 2.4
 	return attack_range
 
@@ -616,7 +835,7 @@ func _update_swing(delta: float) -> void:
 					_strike_player(damage)
 		"sweep":
 			if p >= 0.55 and _a_once("hit"):
-				_spawn_arc_fx(Color(1.0, 0.55, 0.25, 0.9), 2.9, 0.32, 200.0, _height * 0.75)
+				_spawn_arc_fx(_theme("arc", Color(1.0, 0.55, 0.25, 0.9)), 2.9, 0.32, 200.0, _height * 0.75)
 				if _player_in_reach(attack_range + 1.0):
 					_strike_player(damage)
 		"slam":
@@ -634,6 +853,13 @@ func _update_swing(delta: float) -> void:
 		"pounce":
 			if p >= 0.62 and _a_once("pounce_land"):
 				_pounce_impact()
+		"nova":
+			if p >= 0.15 and _a_once("telegraph"):
+				# Faint rings mark each pillar spot while the King rises.
+				for i in 6:
+					_shock_ring(_nova_spot(i), 1.3, _theme("ring", Color(0.5, 0.85, 1.0, 0.9)) * Color(1.0, 1.0, 1.0, 0.35))
+			if p >= 0.55 and _a_once("erupt"):
+				_nova_erupt()
 	if _swing <= 0.0 and not _dead:
 		# The swing is over: fold every posed limb back to rest.
 		_visual.scale = Vector3.ONE
@@ -685,10 +911,53 @@ func _slam_spot() -> Vector3:
 
 func _slam_impact() -> void:
 	var spot := _slam_spot()
-	_shock_ring(spot, 3.6, Color(1.0, 0.45, 0.2, 0.9))
+	_shock_ring(spot, 3.6, _theme("ring", Color(1.0, 0.45, 0.2, 0.9)))
 	_spawn_dust_burst(3.0)
 	if _player_in_reach(3.2):
 		_strike_player(damage * 1.25)
+
+## The Barrow King's nova: grave-fire pillars erupt in a ring around him.
+func _nova_spot(i: int) -> Vector3:
+	var angle := float(i) * TAU / 6.0 + 0.26
+	return global_position + Vector3(cos(angle), 0.0, sin(angle)) * 3.1
+
+func _nova_erupt() -> void:
+	var color := _theme("ring", Color(0.5, 0.85, 1.0, 0.9))
+	for i in 6:
+		var spot := _nova_spot(i)
+		_nova_pillar(spot, color)
+		if _player != null and is_instance_valid(_player):
+			var off := _player.global_position - spot
+			off.y = 0.0
+			if off.length() <= 1.35:
+				_strike_player(damage * 0.8)
+
+func _nova_pillar(spot: Vector3, color: Color) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var pillar := MeshInstance3D.new()
+	var mesh := PrismMesh.new()
+	mesh.size = Vector3(0.55, 2.6, 0.55)
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 1.8
+	mesh.material = material
+	pillar.mesh = mesh
+	pillar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(pillar)
+	pillar.global_position = spot + Vector3(0.0, 1.3, 0.0)
+	pillar.scale = Vector3(0.15, 0.05, 0.15)
+	var tween := pillar.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(pillar, "scale", Vector3.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(material, "albedo_color:a", 0.0, 0.75).set_delay(0.25)
+	tween.chain().tween_callback(pillar.queue_free)
+	_shock_ring(spot, 1.4, Color(color.r, color.g, color.b, 0.55))
 
 func _pounce_impact() -> void:
 	var spot := global_position
@@ -801,9 +1070,9 @@ func _spawn_thorn_bolt(delay: float, fan: float) -> void:
 	mesh.size = Vector3(0.14, 0.42, 0.14)
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(0.55, 0.85, 0.3, 1.0)
+	material.albedo_color = _theme("bolt", Color(0.55, 0.85, 0.3, 1.0))
 	material.emission_enabled = true
-	material.emission = Color(0.45, 0.85, 0.28, 1.0)
+	material.emission = _theme("bolt_glow", Color(0.45, 0.85, 0.28, 1.0))
 	material.emission_energy_multiplier = 1.6
 	mesh.material = material
 	thorn.mesh = mesh
@@ -874,15 +1143,15 @@ func _cast_bolt() -> void:
 	mesh.rings = 5
 	var material := StandardMaterial3D.new()
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(0.5, 1.0, 0.78, 1.0)
+	material.albedo_color = _theme("bolt", Color(0.5, 1.0, 0.78, 1.0))
 	material.emission_enabled = true
-	material.emission = Color(0.4, 1.0, 0.7, 1.0)
+	material.emission = _theme("bolt_glow", Color(0.4, 1.0, 0.7, 1.0))
 	material.emission_energy_multiplier = 2.6
 	mesh.material = material
 	mote.mesh = mesh
 	mote.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var light := OmniLight3D.new()
-	light.light_color = Color(0.5, 1.0, 0.8)
+	light.light_color = _theme("bolt_glow", Color(0.5, 1.0, 0.8))
 	light.light_energy = 1.1
 	light.omni_range = 2.6
 	mote.add_child(light)
@@ -890,7 +1159,7 @@ func _cast_bolt() -> void:
 	if parent == null:
 		return
 	parent.add_child(mote)
-	var start := global_position + Vector3(0.0, 1.25, 0.0)
+	var start := global_position + Vector3(0.0, _height * 0.9, 0.0)
 	var goal := _player.global_position + Vector3(0.0, 0.95, 0.0)
 	mote.global_position = start
 	var tween := mote.create_tween()
@@ -901,7 +1170,7 @@ func _cast_bolt() -> void:
 		if _player != null and is_instance_valid(_player):
 			var chest := _player.global_position + Vector3(0.0, 0.95, 0.0)
 			if chest.distance_to(goal) < 1.25:
-				_hit_player(damage)
+				_strike_player(damage)
 		mote.queue_free()
 	)
 
@@ -972,6 +1241,20 @@ func _apply_attack_pose(p: float) -> void:
 			_pose_bolt(p)
 		"pounce":
 			_pose_pounce(p)
+		"nova":
+			_pose_nova(p)
+
+## The King spreads his arms wide, grave-fire gathering, then hammers down.
+func _pose_nova(p: float) -> void:
+	var raise := _ease_out(clampf(p / 0.45, 0.0, 1.0))
+	var burst := _ease_out(clampf((p - 0.45) / 0.15, 0.0, 1.0))
+	for arm in _arm_pivots:
+		var side := float(arm.get_meta("side", 1.0))
+		arm.rotation.z = float(arm.get_meta("rest_z", 0.0)) + 1.5 * side * raise
+		arm.rotation.x = -0.5 * raise + 0.8 * burst
+		arm.rotation.y = 0.0
+	_visual.position.y = 0.3 * raise - 0.22 * burst
+	_visual.rotation.x = -0.15 * raise + 0.3 * burst
 
 ## Wind the arms up, then drive them down with a lunge. Wolves have no arms, so
 ## their claw reads as a head-snap lunge instead.
@@ -1236,6 +1519,10 @@ func _spawn_burst() -> void:
 		color = Color(0.5, 1.0, 0.78, 1.0)
 	elif variant == "briar_warden":
 		color = Color(1.0, 0.5, 0.24, 1.0)
+	elif variant == "ember_hound" or variant == "cinder_imp":
+		color = Color(1.0, 0.55, 0.25, 1.0)
+	elif variant == "barrow_wight" or variant == "barrow_king":
+		color = Color(0.6, 0.85, 1.0, 1.0)
 	for i in 9:
 		var mote := MeshInstance3D.new()
 		var mesh := SphereMesh.new()

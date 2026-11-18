@@ -56,10 +56,10 @@ shader_parameter/pattern_fade_end = 60.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
 material = SubResource("ShaderMaterial_ground")
-size = Vector2(220, 220)
+size = Vector2(220, 320)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
-size = Vector3(240, 1.2, 240)
+size = Vector3(240, 1.2, 320)
 
 [node name="VerdantReach" type="Node3D" unique_id=871306641]
 
@@ -327,6 +327,151 @@ attack_range = 3.4
 attack_interval = 2.3
 xp_reward = 650.0
 gold_reward = 260
+boss = true
+dormant = true
+
+[node name="EmberHound1" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -122)
+variant = "ember_hound"
+display_name = "Ember Hound"
+max_health = 240.0
+damage = 16.0
+move_speed = 4.4
+aggro_range = 14.0
+attack_range = 2.4
+attack_interval = 1.5
+xp_reward = 95.0
+gold_reward = 12
+
+[node name="EmberHound2" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -124)
+variant = "ember_hound"
+display_name = "Ember Hound"
+max_health = 240.0
+damage = 16.0
+move_speed = 4.4
+aggro_range = 14.0
+attack_range = 2.4
+attack_interval = 1.5
+xp_reward = 95.0
+gold_reward = 12
+
+[node name="EmberHound3" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, -132)
+variant = "ember_hound"
+display_name = "Ember Hound"
+max_health = 240.0
+damage = 16.0
+move_speed = 4.4
+aggro_range = 14.0
+attack_range = 2.4
+attack_interval = 1.5
+xp_reward = 95.0
+gold_reward = 12
+
+[node name="EmberHound4" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, -146)
+variant = "ember_hound"
+display_name = "Ember Hound"
+max_health = 240.0
+damage = 16.0
+move_speed = 4.4
+aggro_range = 14.0
+attack_range = 2.4
+attack_interval = 1.5
+xp_reward = 95.0
+gold_reward = 12
+
+[node name="CinderImp1" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -127)
+variant = "cinder_imp"
+display_name = "Cinder Imp"
+max_health = 180.0
+damage = 19.0
+move_speed = 2.0
+aggro_range = 17.0
+attack_range = 11.0
+attack_interval = 2.4
+xp_reward = 105.0
+gold_reward = 13
+
+[node name="CinderImp2" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 0, -133)
+variant = "cinder_imp"
+display_name = "Cinder Imp"
+max_health = 180.0
+damage = 19.0
+move_speed = 2.0
+aggro_range = 17.0
+attack_range = 11.0
+attack_interval = 2.4
+xp_reward = 105.0
+gold_reward = 13
+
+[node name="CinderImp3" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, -143)
+variant = "cinder_imp"
+display_name = "Cinder Imp"
+max_health = 180.0
+damage = 19.0
+move_speed = 2.0
+aggro_range = 17.0
+attack_range = 11.0
+attack_interval = 2.4
+xp_reward = 105.0
+gold_reward = 13
+
+[node name="BarrowWight1" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -118)
+variant = "barrow_wight"
+display_name = "Barrow Wight"
+max_health = 320.0
+damage = 20.0
+move_speed = 3.0
+aggro_range = 15.0
+attack_range = 2.6
+attack_interval = 2.0
+xp_reward = 130.0
+gold_reward = 16
+
+[node name="BarrowWight2" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -133)
+variant = "barrow_wight"
+display_name = "Barrow Wight"
+max_health = 320.0
+damage = 20.0
+move_speed = 3.0
+aggro_range = 15.0
+attack_range = 2.6
+attack_interval = 2.0
+xp_reward = 130.0
+gold_reward = 16
+
+[node name="BarrowWight3" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -147)
+variant = "barrow_wight"
+display_name = "Barrow Wight"
+max_health = 320.0
+damage = 20.0
+move_speed = 3.0
+aggro_range = 15.0
+attack_range = 2.6
+attack_interval = 2.0
+xp_reward = 130.0
+gold_reward = 16
+
+[node name="BarrowKing" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -138)
+variant = "barrow_king"
+display_name = "The Barrow King"
+max_health = 2600.0
+damage = 30.0
+move_speed = 3.0
+aggro_range = 24.0
+attack_range = 3.6
+attack_interval = 2.3
+xp_reward = 1500.0
+gold_reward = 500
 boss = true
 dormant = true
 

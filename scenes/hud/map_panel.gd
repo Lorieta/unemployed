@@ -14,7 +14,7 @@ var _zone_label: Label
 var _viewport: SubViewport
 
 func _ready() -> void:
-	title = "HEARTHMERE & THE THORNED FIELD"
+	title = "HEARTHMERE, THE FIELD & THE BARROWS"
 	subtitle = "CHARTED LANDS  ·  DAY 3, DUSK"
 	panel_size = Vector2(900.0, 650.0)
 	super._ready()
@@ -57,7 +57,7 @@ func _build_content() -> void:
 
 	add_rule()
 	add_heading("FIELD NOTES")
-	add_paragraph("Hearthmere's plaza holds the fountain, Mira's market stall and Bran's forge; Elder Rowan keeps the hall at its head. South of the gate, briar wolves and mosslings work the field, and the wayshrine stands among leaning stones southwest of the road. The Briar Warden sleeps in the far clearing until the shrine is lit.", PARCHMENT, 12)
+	add_paragraph("Hearthmere's plaza holds the fountain, Mira's market stall and Bran's forge; Elder Rowan keeps the hall at its head. South of the gate, briar wolves and mosslings work the field, and the wayshrine stands among leaning stones southwest of the road. The Briar Warden sleeps in the far clearing until the shrine is lit. Past the field's southern edge, burning gateposts mark the Ashen Barrows — ember hounds, cinder imps and grave-frost wights keep the mounds, and their King sleeps angry at the arena's heart. Only a hero a few levels hard should cross the threshold.", PARCHMENT, 12)
 	var row := add_row("POSITION", "", GOLD)
 	_coord_label = row.get_child(1) as Label
 	var zone_row := add_row("ZONE", "HEARTHMERE", GOLD)
@@ -67,6 +67,7 @@ func _build_content() -> void:
 	add_row("THE THORNED FIELD", "MOSSLINGS  ·  BRIAR WOLVES  ·  WISPS", GOLD_BRIGHT)
 	add_row("THE WAYSHRINE", "SOUTHWEST OF THE ROAD", GOLD_BRIGHT)
 	add_row("THE WARDEN'S CLEARING", "FAR SOUTH  ·  SEALED UNTIL THE SHRINE WAKES", GOLD_BRIGHT)
+	add_row("THE ASHEN BARROWS", "THE SCORCHED SOUTH  ·  EMBER HOUNDS  ·  WIGHTS  ·  THE KING", GOLD_BRIGHT)
 
 	_player = get_tree().get_first_node_in_group("player") as Node3D
 	if _viewport != null and get_viewport() != null:
@@ -93,6 +94,8 @@ func _update_camera() -> void:
 		_camera.global_position = Vector3(0.0, 40.0, 0.0)
 
 func _zone_name(position: Vector3) -> String:
+	if position.z < -108.0:
+		return "THE ASHEN BARROWS"
 	if position.z < -86.0:
 		return "THE WARDEN'S CLEARING"
 	if position.distance_to(Vector3(-6.0, 0.0, -74.0)) < 14.0:

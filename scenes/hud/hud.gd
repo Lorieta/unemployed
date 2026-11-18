@@ -64,6 +64,7 @@ const ZONE_INFO := {
 	"field": {"title": "THE THORNED FIELD", "subtitle": "BEYOND HEARTHMERE'S GATE"},
 	"shrine": {"title": "THE WAYSHRINE", "subtitle": "A QUIET CLEARING IN THE BRIARS"},
 	"warden": {"title": "THE WARDEN'S CLEARING", "subtitle": "OLD STONE AND LIVING THORNS"},
+	"barrows": {"title": "THE ASHEN BARROWS", "subtitle": "THE SCORCHED SOUTH  ·  HERE KINGS SLEEP ANGRY"},
 }
 
 ## Everything the two shopkeepers carry. `whetstone` and `rivet` are permanent
@@ -1418,13 +1419,18 @@ func on_monster_killed(monster: Node, variant: String, is_boss: bool, xp_reward:
 		if _wolves_culled >= STORY_SIDE_WOLVES_REQUIRED:
 			_side_stage = 2
 			notes.append("Tomas's wolves are done.  Return to him at the gate.")
-	if is_boss:
+	if is_boss and str(variant) == "briar_warden":
 		_boss_defeated = true
 		if _story_stage == 4:
 			_story_stage = 5
 			notes.append("The Briar Warden falls.  Return to Elder Rowan.")
 		elif _story_stage < 4:
 			notes.append("The Briar Warden is fallen, but the wayshrine is still cold.")
+	elif is_boss:
+		var boss_name := str(monster.get("display_name"))
+		if boss_name.is_empty():
+			boss_name = "The barrow king"
+		notes.append("%s is cast down!" % boss_name)
 
 	_refresh_progress()
 	_refresh_quest()
@@ -1553,15 +1559,26 @@ func _apply_level_up() -> void:
 	_refresh_progress()
 	_save_run()
 
+## Autoloads are registered as global identifiers only when the project boots
+## through its main scene. Looking the singleton up at runtime keeps headless
+## harnesses (which boot straight into a SceneTree script) compiling too.
+func _save_manager() -> Node:
+	return get_node_or_null("/root/SaveManager")
+
 ## Called once from `_ready`: pulls SaveManager's active run into the HUD —
 ## class, name, level, gear, skills, satchel, quest and shop progress, and the
 ## shrine/Warden state — then locks the armory and skill library to the hero's
 ## path. A debug run straight from the editor (no active save) is untouched.
 func _apply_run_data() -> void:
-	if not SaveManager.active_exists():
+	var manager := _save_manager()
+	if manager == null or not bool(manager.call("active_exists")):
 		return
 	_loading_run = true
-	var data: Dictionary = SaveManager.active_data
+	var saved: Variant = manager.get("active_data")
+	if typeof(saved) != TYPE_DICTIONARY or (saved as Dictionary).is_empty():
+		_loading_run = false
+		return
+	var data: Dictionary = saved
 	_character_id = str(data.get("character_id", "knight"))
 	var info: Dictionary = CharacterLibrary.get_character(_character_id)
 	_character_name = str(data.get("character_name", info.get("name", "Aldric")))
@@ -1657,7 +1674,8 @@ func _skills_snapshot() -> Dictionary:
 ## meaningful moments (quest changes, level-ups, purchases, death, quitting)
 ## rather than every hit.
 func _save_run() -> void:
-	if _loading_run or not SaveManager.active_exists():
+	var manager := _save_manager()
+	if _loading_run or manager == null or not bool(manager.call("active_exists")):
 		return
 	var purchases := {"mira": {}, "bran": {}}
 	for shop_id in _purchases.keys():
@@ -1667,7 +1685,7 @@ func _save_run() -> void:
 	if _player != null:
 		weapon = str(_player.get("equipped_weapon"))
 		offhand = str(_player.get("equipped_offhand"))
-	SaveManager.save_progress({
+	manager.call("save_progress", {
 		"character_id": _character_id,
 		"character_name": _character_name,
 		"level": _level,
@@ -1713,7 +1731,9 @@ func _update_zone(delta: float) -> void:
 		return
 	var position: Vector3 = _player.global_position
 	var id := "town"
-	if position.z < -86.0:
+	if position.z < -108.0:
+		id = "barrows"
+	elif position.z < -86.0:
 		id = "warden"
 	elif position.distance_to(Vector3(-6.0, 0.0, -74.0)) < 14.0:
 		id = "shrine"

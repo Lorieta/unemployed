@@ -8,6 +8,10 @@ extends StaticBody3D
 
 @export var entrance_name := "the Under-Reach"
 
+## The stone ring is wider than a doorway: let the hero interact from anywhere
+## on its visible rim instead of only the middle.
+const INTERACTION_RADIUS := 5.4
+
 var _lit_fx := false
 var _glow_materials: Array[StandardMaterial3D] = []
 var _flames: Array[MeshInstance3D] = []
@@ -24,16 +28,31 @@ func can_interact() -> bool:
 	var manager := _find_manager()
 	if manager == null or bool(manager.call("is_inside_dungeon")):
 		return false
-	return _shrine_lit()
+	# Stay targetable even while the shrine is dark so the ring can explain why
+	# it will not open instead of silently doing nothing.
+	return true
+
+func get_interaction_range() -> float:
+	return INTERACTION_RADIUS
 
 func get_interaction_prompt() -> String:
+	if not _shrine_lit():
+		return "[ E ]     The ring is dormant - light the wayshrine"
 	return "[ E ]     Descend into %s" % entrance_name
 
 func interact(_player: Node) -> void:
 	var manager := _find_manager()
 	if manager == null or bool(manager.call("is_inside_dungeon")):
 		return
+	if not _shrine_lit():
+		_toast("The ring is cold.  Light the wayshrine to open the way down.")
+		return
 	manager.call("enter_dungeon")
+
+func _toast(text: String) -> void:
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud != null and hud.has_method("show_toast"):
+		hud.call("show_toast", text, 2.6)
 
 func _process(delta: float) -> void:
 	_time += delta

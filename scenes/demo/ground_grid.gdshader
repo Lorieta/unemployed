@@ -69,6 +69,18 @@ void fragment() {
 	color += (grain - 0.5) * 0.055 * distance_fade;
 	color += smoothstep(0.72, 1.0, clumps) * 0.05 * distance_fade;
 
+	// The Ashen Barrows: south of the burning threshold the meadow gives way
+	// to scorched ash, with dim ember veins glowing in the char.
+	float ashen = 1.0 - smoothstep(-114.0, -108.0, world_position.z);
+	if (ashen > 0.001) {
+		vec3 ash_color = mix(vec3(0.17, 0.16, 0.15), vec3(0.235, 0.22, 0.2), clamp(patches, 0.0, 1.0) * 0.85);
+		ash_color = mix(ash_color, vec3(0.1, 0.08, 0.07), dryness * 0.5 * distance_fade);
+		ash_color += (grain - 0.5) * 0.05 * distance_fade;
+		float ember_vein = smoothstep(0.78, 0.96, fbm(p * 0.12 + 3.1));
+		ash_color += vec3(0.3, 0.11, 0.035) * ember_vein * 0.6;
+		color = mix(color, ash_color, ashen);
+	}
+
 	ALBEDO = color;
 	ROUGHNESS = 1.0;
 }
