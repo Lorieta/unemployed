@@ -45,11 +45,11 @@ func _build_content() -> void:
 	add_rule()
 
 	add_heading("HEARTHMERE")
-	add_paragraph("A lantern town at the north end of the Reach, built around a fountain plaza and held by an old gate. Elder Rowan keeps the hall, Mira keeps the market stall with the red awning, Bran keeps the forge, and Tomas keeps the gate. Follow the south road under the ruined arch and you are in the Thorned Field.", PARCHMENT, 13)
+	add_paragraph("A lantern town at the north end of the Reach, built around a fountain plaza and held by an old gate. Elder Rowan keeps the hall, Mira keeps the market stall with the red awning, Bran keeps the forge, and Tomas keeps the gate. The communal bread oven smokes near the north road, the chapel bell hangs over its green, and bee skeps hum against the chapel wall. Follow the south road under the ruined arch and you are in the Thorned Field.", PARCHMENT, 13)
 	add_rule()
 
 	add_heading("THE THORNED FIELD")
-	add_paragraph("Mosslings drift through the grass, briar wolves hunt in packs, and foxfire wisps carry their own cold light. The wayshrine stands southwest among leaning stones, and the Briar Warden sleeps in the far clearing until the shrine is lit. Beasts return to their ground after a time; the Warden does not.", PARCHMENT, 13)
+	add_paragraph("Mosslings drift through the grass, briar wolves hunt in packs, and foxfire wisps carry their own cold light. The wayshrine stands southwest among leaning stones, and the Briar Warden sleeps in the far clearing until the shrine is lit. A poacher's camp, a memorial at the arch, an old orchard and a row of graves keep the field's human history close. Beasts and named bosses return to their ground after a time, and a lit wayshrine can restore a weary hero. The briar-sealed cave mouth in the western rocks stays open for any hero who has already completed Rowan's quest, even after a reload.", PARCHMENT, 13)
 	add_rule()
 
 	add_heading("THE WAYFARER")

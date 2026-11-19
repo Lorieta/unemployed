@@ -29,22 +29,35 @@ func _run() -> void:
 	_check("depth is 0 before entry", int(_manager.depth) == 0)
 	_check("dungeon inactive before entry", not bool(_manager.call("is_inside_dungeon")))
 
+	var player := get_first_node_in_group("player") as Node3D
+	_check("hero present", player != null)
+	var surface_spot := player.global_position
+
 	var entrance := get_first_node_in_group("dungeon_entrance") as Node
 	_check("entrance exists", entrance != null)
 	if entrance == null:
 		quit(1)
 		return
-	_check("entrance locked while shrine sleeps", not entrance.call("can_interact"))
+	_check("entrance is targetable while shrine sleeps", entrance.call("can_interact"))
+	_check(
+		"dormant cave points at the wayshrine",
+		str(entrance.call("get_interaction_prompt")).to_lower().contains("wayshrine")
+	)
+	entrance.call("interact", player)
+	await _wait_frames(5)
+	_check("sealed cave refuses entry", not bool(_manager.call("is_inside_dungeon")))
+	# The cave mouth has a broad approach; a hero standing out on the apron must
+	# still be able to target it, not just one pressed against the thorns.
+	player.global_position = entrance.global_position + Vector3(0.0, 0.8, 4.6)
+	player.call("_scan_interactions", 1.0)
+	_check("cave is reachable from its approach stones", player.get("_interaction_target") == entrance)
+	player.global_position = surface_spot
 
 	var shrine := get_first_node_in_group("shrine") as Node
 	_check("wayshrine present", shrine != null)
 	shrine.call("light_up")
 	await _wait_frames(10)
 	_check("entrance opens once the shrine is lit", entrance.call("can_interact"))
-
-	var player := get_first_node_in_group("player") as Node3D
-	_check("hero present", player != null)
-	var surface_spot := player.global_position
 
 	entrance.call("interact", player)
 	await _wait_frames(40)
@@ -111,7 +124,12 @@ func _run() -> void:
 		player.global_position.distance_to(surface_spot) < 2.0
 	)
 	var restored_env: Environment = _environment().environment
-	_check("world lighting restored", restored_env != null and restored_env.background_color.v > 0.3)
+	# The Reach uses a sky background, so its background_color is intentionally
+	# black; restoring the actual sky resource is what matters here.
+	_check(
+		"world lighting restored",
+		restored_env != null and (restored_env.background_mode == Environment.BG_SKY or restored_env.background_color.v > 0.3)
+	)
 	_check("sun relit", _sun().light_energy > 0.3)
 
 	entrance.call("interact", player)

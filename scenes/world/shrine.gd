@@ -115,6 +115,17 @@ func light_up() -> void:
 func is_lit() -> bool:
 	return lit
 
+## Save system: re-apply the lit state on load without replaying the lighting
+## pulse, so a returning hero finds the shrine exactly as they left it.
+func restore_lit() -> void:
+	lit = true
+	_glow_material.emission_enabled = true
+	_glow_material.emission = Color(0.5, 1.0, 0.66)
+	_glow_material.emission_energy_multiplier = 2.4
+	if _light != null:
+		_light.light_energy = 2.2
+		_light.omni_range = 14.0
+
 func _spawn_pulse() -> void:
 	var parent := get_parent()
 	if parent == null:

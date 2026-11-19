@@ -141,6 +141,5 @@ fov = 40.0
 far = 120.0
 script = ExtResource("3_camera")
 target_path = NodePath("../Human")
-offset = Vector3(-2.8, 2.7, 4.6)
 
 [node name="HUD" parent="." unique_id=1269484765 instance=ExtResource("5_hud")]

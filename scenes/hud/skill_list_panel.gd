@@ -19,6 +19,7 @@ const SLOT_COUNT_HINT := 5
 var _assign_slot := -1
 var _assigned: Array = []
 var _school_id := "sword"
+var _allowed_school := ""
 var _tabs: HBoxContainer
 var _body: VBoxContainer
 var _sections := {}
@@ -115,6 +116,9 @@ func _build_section(section: VBoxContainer, school_id: String) -> void:
 
 	for skill_id in SKILL_LIBRARY.skills_in_school(school_id):
 		_build_card(section, skill_id)
+
+	if not _allowed_school.is_empty():
+		_apply_school_lock()
 
 func _build_card(section: VBoxContainer, skill_id: String) -> void:
 	var data: Dictionary = SKILL_LIBRARY.SKILLS[skill_id]
@@ -222,7 +226,57 @@ func _meta_text(data: Dictionary) -> String:
 			parts.append("GUARD")
 		"recall":
 			parts.append("RETURN")
+		"whirlwind":
+			parts.append("%d x %.0f DAMAGE IN %.1f m RING" % [int(data.get("hits", 1)), float(data.get("damage", 0.0)), float(data.get("radius", 0.0))])
+		"wave":
+			parts.append("%.0f DAMAGE WAVE" % float(data.get("damage", 0.0)))
+		"line":
+			parts.append("%.0f DAMAGE, %.0f m LINE" % [float(data.get("damage", 0.0)), float(data.get("length", 0.0))])
+		"rain":
+			parts.append("%d ARROWS ON %.1f m" % [int(data.get("count", 1)), float(data.get("radius", 0.0))])
+		"multishot":
+			parts.append("%d ARROWS IN A FAN" % int(data.get("count", 1)))
+		"piercing":
+			parts.append("%.0f DAMAGE, PIERCES %d" % [float(data.get("damage", 0.0)), int(data.get("pierce", 1))])
+		"explosive", "fireball":
+			parts.append("%.0f DAMAGE + %.0f BLAST" % [float(data.get("damage", 0.0)), float(data.get("blast_damage", 0.0))])
+		"ice_lance":
+			parts.append("%.0f DAMAGE, SLOWS" % float(data.get("damage", 0.0)))
+		"lightning":
+			parts.append("%.0f DAMAGE IN %.1f m" % [float(data.get("damage", 0.0)), float(data.get("radius", 0.0))])
+		"arcane":
+			parts.append("%.0f DAMAGE IN %.1f m RING" % [float(data.get("damage", 0.0)), float(data.get("radius", 0.0))])
+		"fan":
+			parts.append("%d KNIVES" % int(data.get("count", 1)))
+		"poison":
+			parts.append("%.0f DAMAGE + %.0f POISON" % [float(data.get("damage", 0.0)), float(data.get("poison_damage", 0.0))])
+		"foxfire_bolt":
+			parts.append("%.0f DAMAGE, SEEKING" % float(data.get("damage", 0.0)))
+		"orbs":
+			parts.append("%d ORBS, %.0f DAMAGE EACH" % [int(data.get("count", 1)), float(data.get("damage", 0.0))])
+		"clone":
+			parts.append("DECOY FOR %.0f s" % float(data.get("clone_duration", 0.0)))
+		"dash_strike", "shadow_dash":
+			parts.append("DASH + %.0f DAMAGE" % float(data.get("damage", 0.0)))
+		"fox_dash":
+			parts.append("DASH")
 	return "   ·   ".join(parts)
+
+## Locks the library to one weapon school. Pass "" to show all five folders
+## (debug runs keep the old behaviour).
+func set_allowed_school(school_id: String) -> void:
+	_allowed_school = str(school_id)
+	if _tabs == null:
+		return
+	_apply_school_lock()
+
+func _apply_school_lock() -> void:
+	if _allowed_school.is_empty():
+		return
+	for id in _tab_buttons:
+		(_tab_buttons[id] as Button).visible = str(id) == _allowed_school
+	if _school_id != _allowed_school and SKILL_LIBRARY.SCHOOLS.has(_allowed_school):
+		_select_school(_allowed_school)
 
 func _select_school(school_id: String) -> void:
 	if not SKILL_LIBRARY.SCHOOLS.has(school_id):
@@ -249,7 +303,7 @@ func _select_school(school_id: String) -> void:
 
 func open_browser(school_hint := "") -> void:
 	_assign_slot = -1
-	set_header("SKILL LIBRARY", "FIVE SCHOOLS OF THE ROAD")
+	set_header("SKILL LIBRARY", _library_subtitle())
 	_clear_button.visible = false
 	if SKILL_LIBRARY.SCHOOLS.has(school_hint):
 		_select_school(school_hint)
@@ -270,6 +324,9 @@ func open_for_slot(slot_index: int, school_hint := "") -> void:
 func set_assigned(assigned: Array) -> void:
 	_assigned = assigned.duplicate()
 	_refresh_cards()
+
+func _library_subtitle() -> String:
+	return "ONE SCHOOL OF THE ROAD" if not _allowed_school.is_empty() else "FIVE SCHOOLS OF THE ROAD"
 
 func _refresh_cards() -> void:
 	for skill_id in _status_labels:

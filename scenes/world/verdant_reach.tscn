@@ -13,38 +13,53 @@
 [ext_resource type="Script" uid="uid://6tux7fnf2qu5" path="res://scenes/world/world_builder.gd" id="11_builder"]
 [ext_resource type="Script" path="res://scripts/dungeon/dungeon_manager.gd" id="12_dungeon"]
 
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial_reach"]
+sky_top_color = Color(0.19, 0.28, 0.47, 1)
+sky_horizon_color = Color(0.91, 0.63, 0.38, 1)
+sky_curve = 0.14
+ground_bottom_color = Color(0.24, 0.19, 0.14, 1)
+ground_horizon_color = Color(0.76, 0.55, 0.36, 1)
+sun_angle_max = 30.0
+sun_curve = 0.11
+
+[sub_resource type="Sky" id="Sky_reach"]
+sky_material = SubResource("SkyMaterial_reach")
+
 [sub_resource type="Environment" id="Environment_reach"]
-background_mode = 1
-background_color = Color(0.44, 0.58, 0.6, 1)
+background_mode = 2
+sky = SubResource("Sky_reach")
 ambient_light_source = 2
-ambient_light_color = Color(0.62, 0.69, 0.65, 1)
-ambient_light_energy = 0.62
-tonemap_mode = 2
+ambient_light_color = Color(0.65, 0.6, 0.55, 1)
+ambient_light_energy = 0.85
+tonemap_mode = 3
 glow_enabled = true
-glow_intensity = 0.55
-glow_bloom = 0.08
+glow_intensity = 0.6
+glow_bloom = 0.1
 fog_enabled = true
-fog_light_color = Color(0.53, 0.63, 0.59, 1)
-fog_light_energy = 0.7
-fog_density = 0.008
-fog_aerial_perspective = 0.4
+fog_light_color = Color(0.83, 0.62, 0.44, 1)
+fog_light_energy = 0.75
+fog_density = 0.004
+fog_aerial_perspective = 0.55
+fog_sky_affect = 0.1
+fog_height = 0.0
+fog_height_density = 0.008
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ground"]
 render_priority = 0
 shader = ExtResource("3_ground_shader")
-shader_parameter/base_color = Color(0.29, 0.36, 0.29, 1)
-shader_parameter/tile_color = Color(0.33, 0.4, 0.32, 1)
-shader_parameter/line_color = Color(0.39, 0.46, 0.36, 1)
+shader_parameter/base_color = Color(0.26, 0.35, 0.2, 1)
+shader_parameter/tile_color = Color(0.36, 0.47, 0.25, 1)
+shader_parameter/line_color = Color(0.52, 0.47, 0.28, 1)
 shader_parameter/cell_size = 2.0
 shader_parameter/pattern_fade_start = 20.0
 shader_parameter/pattern_fade_end = 60.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
 material = SubResource("ShaderMaterial_ground")
-size = Vector2(220, 220)
+size = Vector2(220, 320)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
-size = Vector3(240, 1.2, 240)
+size = Vector3(240, 1.2, 320)
 
 [node name="VerdantReach" type="Node3D" unique_id=871306641]
 
@@ -53,10 +68,11 @@ environment = SubResource("Environment_reach")
 
 [node name="Sun" type="DirectionalLight3D" parent="." unique_id=155995769]
 transform = Transform3D(0.7518057, 0.5246075, -0.3994685, 0, 0.6058201, 0.7956016, 0.65938467, -0.59813786, 0.45545903, 0, 12, 0)
-light_color = Color(1, 0.94, 0.82, 1)
-light_energy = 1.12
+light_color = Color(1, 0.87, 0.66, 1)
+light_energy = 1.35
 shadow_enabled = true
-directional_shadow_max_distance = 70.0
+shadow_blur = 1.4
+directional_shadow_max_distance = 80.0
 
 [node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1356978116]
 transform = Transform3D(-0.8159128, -0.31261098, 0.48637545, -0.020211762, 0.8561325, 0.5163612, -0.57782185, 0.41147515, -0.70484763, -0.12636006, 0.054728325, 0.034962177)
@@ -179,6 +195,54 @@ skin_color = Color(0.8, 0.62, 0.47, 1)
 hair_color = Color(0.24, 0.16, 0.1, 1)
 accent_color = Color(0.4, 0.34, 0.22, 1)
 carries_lantern = true
+
+[node name="Hollis" parent="NPCs" unique_id=1883402715 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0, 31)
+npc_id = "hollis"
+display_name = "Hollis"
+role = "merchant"
+robe_color = Color(0.36, 0.22, 0.19, 1)
+trim_color = Color(0.74, 0.57, 0.28, 1)
+skin_color = Color(0.79, 0.61, 0.45, 1)
+hair_color = Color(0.28, 0.17, 0.09, 1)
+accent_color = Color(0.52, 0.32, 0.18, 1)
+hat_style = "cap"
+
+[node name="Maelin" parent="NPCs" unique_id=1972184463 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0, 29.6)
+npc_id = "maelin"
+display_name = "Sister Maelin"
+role = "elder"
+robe_color = Color(0.3, 0.36, 0.33, 1)
+trim_color = Color(0.72, 0.7, 0.56, 1)
+skin_color = Color(0.74, 0.58, 0.44, 1)
+hair_color = Color(0.66, 0.64, 0.58, 1)
+accent_color = Color(0.38, 0.42, 0.34, 1)
+hat_style = "hood"
+
+[node name="Pip" parent="NPCs" unique_id=1338650912 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -16.6)
+npc_id = "pip"
+display_name = "Pip"
+role = "villager"
+robe_color = Color(0.42, 0.38, 0.24, 1)
+trim_color = Color(0.64, 0.5, 0.26, 1)
+skin_color = Color(0.84, 0.68, 0.52, 1)
+hair_color = Color(0.5, 0.32, 0.14, 1)
+accent_color = Color(0.58, 0.42, 0.2, 1)
+hat_style = "cap"
+
+[node name="Tilda" parent="NPCs" unique_id=1720913548 instance=ExtResource("8_townsfolk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0, -19)
+npc_id = "tilda"
+display_name = "Tilda"
+role = "merchant"
+robe_color = Color(0.3, 0.32, 0.4, 1)
+trim_color = Color(0.7, 0.58, 0.34, 1)
+skin_color = Color(0.82, 0.64, 0.48, 1)
+hair_color = Color(0.35, 0.2, 0.11, 1)
+accent_color = Color(0.48, 0.38, 0.24, 1)
+hat_style = "kerchief"
 
 [node name="Wayshrine" parent="." unique_id=1338103482 instance=ExtResource("10_shrine")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -74)
@@ -313,6 +377,155 @@ xp_reward = 650.0
 gold_reward = 260
 boss = true
 dormant = true
+boss_respawns = true
+boss_respawn_delay = 240.0
+
+[node name="EmberHound1" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -122)
+variant = "ember_hound"
+display_name = "Ember Hound"
+max_health = 240.0
+damage = 16.0
+move_speed = 4.4
+aggro_range = 14.0
+attack_range = 2.4
+attack_interval = 1.5
+xp_reward = 95.0
+gold_reward = 12
+
+[node name="EmberHound2" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -124)
+variant = "ember_hound"
+display_name = "Ember Hound"
+max_health = 240.0
+damage = 16.0
+move_speed = 4.4
+aggro_range = 14.0
+attack_range = 2.4
+attack_interval = 1.5
+xp_reward = 95.0
+gold_reward = 12
+
+[node name="EmberHound3" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, -132)
+variant = "ember_hound"
+display_name = "Ember Hound"
+max_health = 240.0
+damage = 16.0
+move_speed = 4.4
+aggro_range = 14.0
+attack_range = 2.4
+attack_interval = 1.5
+xp_reward = 95.0
+gold_reward = 12
+
+[node name="EmberHound4" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, -146)
+variant = "ember_hound"
+display_name = "Ember Hound"
+max_health = 240.0
+damage = 16.0
+move_speed = 4.4
+aggro_range = 14.0
+attack_range = 2.4
+attack_interval = 1.5
+xp_reward = 95.0
+gold_reward = 12
+
+[node name="CinderImp1" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -127)
+variant = "cinder_imp"
+display_name = "Cinder Imp"
+max_health = 180.0
+damage = 19.0
+move_speed = 2.0
+aggro_range = 17.0
+attack_range = 11.0
+attack_interval = 2.4
+xp_reward = 105.0
+gold_reward = 13
+
+[node name="CinderImp2" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 0, -133)
+variant = "cinder_imp"
+display_name = "Cinder Imp"
+max_health = 180.0
+damage = 19.0
+move_speed = 2.0
+aggro_range = 17.0
+attack_range = 11.0
+attack_interval = 2.4
+xp_reward = 105.0
+gold_reward = 13
+
+[node name="CinderImp3" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, -143)
+variant = "cinder_imp"
+display_name = "Cinder Imp"
+max_health = 180.0
+damage = 19.0
+move_speed = 2.0
+aggro_range = 17.0
+attack_range = 11.0
+attack_interval = 2.4
+xp_reward = 105.0
+gold_reward = 13
+
+[node name="BarrowWight1" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -118)
+variant = "barrow_wight"
+display_name = "Barrow Wight"
+max_health = 320.0
+damage = 20.0
+move_speed = 3.0
+aggro_range = 15.0
+attack_range = 2.6
+attack_interval = 2.0
+xp_reward = 130.0
+gold_reward = 16
+
+[node name="BarrowWight2" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -133)
+variant = "barrow_wight"
+display_name = "Barrow Wight"
+max_health = 320.0
+damage = 20.0
+move_speed = 3.0
+aggro_range = 15.0
+attack_range = 2.6
+attack_interval = 2.0
+xp_reward = 130.0
+gold_reward = 16
+
+[node name="BarrowWight3" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -147)
+variant = "barrow_wight"
+display_name = "Barrow Wight"
+max_health = 320.0
+damage = 20.0
+move_speed = 3.0
+aggro_range = 15.0
+attack_range = 2.6
+attack_interval = 2.0
+xp_reward = 130.0
+gold_reward = 16
+
+[node name="BarrowKing" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -138)
+variant = "barrow_king"
+display_name = "The Barrow King"
+max_health = 2600.0
+damage = 30.0
+move_speed = 3.0
+aggro_range = 24.0
+attack_range = 3.6
+attack_interval = 2.3
+xp_reward = 1500.0
+gold_reward = 500
+boss = true
+dormant = true
+boss_respawns = true
+boss_respawn_delay = 300.0
 
 [node name="Human" parent="." unique_id=497751500 instance=ExtResource("1_human")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)

@@ -43,15 +43,28 @@ const ARMORY_START_Y := 0.0
 const ARMORY_ROW_HEIGHT := 58.0
 const DEFAULT_ITEM_HINT := "Click a carried item to use it.  Hover to read its description."
 
-## Definitions for item ids that shops can add to the satchel. Existing stacks are
-## simply topped up; a brand-new entry is added to the first free grid slot.
+## Definitions for item ids that shops, caches and dungeon chests can add to the
+## satchel. Existing stacks are simply topped up; a brand-new entry is added to
+## the first free grid slot.
 const ITEM_DEFINITIONS := {
 	"health": {"icon": ICON_POTION_RED, "name": "Crimson Draught", "description": "Restores 45 health. Bitter, but it works."},
+	"health_greater": {"icon": ICON_POTION_RED, "name": "Greater Crimson Draught", "description": "Restores 90 health. Thick as syrup and twice as potent."},
 	"mana": {"icon": ICON_POTION_BLUE, "name": "Azure Draught", "description": "Restores 40 mana. Tastes of cold rain."},
-	"moonpetal": {"icon": ICON_HERB, "name": "Moonpetal", "description": "A pale herb that opens only at dusk."},
+	"mana_greater": {"icon": ICON_POTION_BLUE, "name": "Greater Azure Draught", "description": "Restores 80 mana. Cold enough to sting the teeth."},
+	"elixir": {"icon": ICON_POTION_BLUE, "name": "Wayfarer's Elixir", "description": "Restores 60 health and 50 mana. A road-surgeon's last resort."},
+	"ember_tonic": {"icon": ICON_POTION_RED, "name": "Ember Tonic", "description": "+6 attack power for 30 seconds. The heat settles behind the eyes."},
+	"frost_salve": {"icon": ICON_POTION_BLUE, "name": "Frost Salve", "description": "-15% damage taken for 30 seconds. Numbs the wound before it lands."},
+	"smoke_bomb": {"icon": ICON_HERB, "name": "Smoke Bomb", "description": "Blinds nearby foes and hastens your escape for a few heartbeats."},
+	"moonpetal": {"icon": ICON_HERB, "name": "Moonpetal", "description": "Chew the pale herb for 20 mana and a short mending surge."},
 	"waybread": {"icon": ICON_HERB, "name": "Waybread", "description": "Hearth-baked and honeyed. Restores 25 health on the road."},
-	"return": {"icon": ICON_SCROLL, "name": "Scroll of Return", "description": "Read the runes to return to the old well."},
+	"return": {"icon": ICON_SCROLL, "name": "Scroll of Return", "description": "Read the runes to return to the old well. Spent on use."},
 	"torch": {"icon": ICON_TORCH, "name": "Pitch Torch", "description": "Click to kindle or smother a warm travelling light."},
+	"soulstone": {"icon": ICON_GEM, "name": "Verdant Soulstone", "description": "Crush it to release 250 experience. It hums faintly."},
+	"key": {"icon": ICON_KEY, "name": "Old Well Key", "description": "A cold iron key. It might open a deeper vault."},
+	"map": {"icon": ICON_MAP, "name": "Valley Map", "description": "Unfolds the chart of the Verdant Reach."},
+	"ring": {"icon": ICON_RING, "name": "Band of the Wanderer", "description": "Wear it for a permanent +2 attack power on this journey."},
+	"gold": {"icon": ICON_COIN, "name": "Coin Purse", "description": "A worn purse holding 50 coins. Click to add them to your gold."},
+	"shield": {"icon": ICON_SHIELD, "name": "Travel Shield", "description": "Click to take up the oaken shield in your free hand."},
 }
 
 var _equipment := [
@@ -66,21 +79,21 @@ var _equipment := [
 var _items := [
 	{"id": "health", "icon": ICON_POTION_RED, "name": "Crimson Draught", "stack": 4, "description": "Restores 45 health. Bitter, but it works."},
 	{"id": "mana", "icon": ICON_POTION_BLUE, "name": "Azure Draught", "stack": 2, "description": "Restores 40 mana. Tastes of cold rain."},
-	{"id": "moonpetal", "icon": ICON_HERB, "name": "Moonpetal", "stack": 5, "description": "A pale herb that opens only at dusk."},
-	{"id": "return", "icon": ICON_SCROLL, "name": "Scroll of Return", "stack": 1, "description": "Read the runes to return to the old well."},
+	{"id": "moonpetal", "icon": ICON_HERB, "name": "Moonpetal", "stack": 5, "description": "Chew the pale herb for 20 mana and a short mending surge."},
+	{"id": "return", "icon": ICON_SCROLL, "name": "Scroll of Return", "stack": 1, "description": "Read the runes to return to the old well. Spent on use."},
 	{"id": "torch", "icon": ICON_TORCH, "name": "Pitch Torch", "stack": 1, "description": "Click to kindle or smother a warm travelling light."},
-	{"id": "soulstone", "icon": ICON_GEM, "name": "Verdant Soulstone", "stack": 1, "description": "A shard of the Reach's old magic. It hums faintly."},
-	{"id": "key", "icon": ICON_KEY, "name": "Old Well Key", "stack": 1, "description": "A cold iron key. Opens nothing you have found yet."},
+	{"id": "soulstone", "icon": ICON_GEM, "name": "Verdant Soulstone", "stack": 1, "description": "Crush it to release 250 experience. It hums faintly."},
+	{"id": "key", "icon": ICON_KEY, "name": "Old Well Key", "stack": 1, "description": "A cold iron key. It might open a deeper vault."},
 	{"id": "map", "icon": ICON_MAP, "name": "Valley Map", "stack": 1, "description": "Unfolds the chart of the Verdant Reach."},
-	{"id": "ring", "icon": ICON_RING, "name": "Band of the Wanderer", "stack": 1, "description": "A plain ring, warm to the touch."},
-	{"id": "gold", "icon": ICON_COIN, "name": "Gold Coins", "stack": 86, "description": "Eighty-six coins in a worn leather purse."},
-	{"id": "shield", "icon": ICON_SHIELD, "name": "Travel Shield", "stack": 1, "description": "Oaken, scarred, and steady. It has seen worse roads."},
+	{"id": "ring", "icon": ICON_RING, "name": "Band of the Wanderer", "stack": 1, "description": "Wear it for a permanent +2 attack power on this journey."},
+	{"id": "shield", "icon": ICON_SHIELD, "name": "Travel Shield", "stack": 1, "description": "Click to take up the oaken shield in your free hand."},
 ]
 
 var _tween: Tween
 var _equipped := "sword"
 var _equipped_offhand := "shield"
 var _armory_tab := "weapons"
+var _allowed_weapons: Array = []
 var _weapon_slots := {}
 var _offhand_slots := {}
 var _item_slots: Array[QuickSlot] = []
@@ -232,8 +245,13 @@ func _build_items() -> void:
 
 func _build_armory() -> void:
 	var parent: Control = $Panel/ArmoryRows
-	for i in WeaponLibrary.ORDER.size():
-		var weapon_id: String = WeaponLibrary.ORDER[i]
+	for child in parent.get_children():
+		parent.remove_child(child)
+		child.queue_free()
+	_weapon_slots = {}
+	var ids := _armory_weapon_ids()
+	for i in ids.size():
+		var weapon_id: String = ids[i]
 		var data: Dictionary = WeaponLibrary.WEAPONS[weapon_id]
 		var y := ARMORY_START_Y + float(i) * ARMORY_ROW_HEIGHT
 
@@ -249,6 +267,30 @@ func _build_armory() -> void:
 
 		parent.add_child(_make_label(str(data["name"]), Vector2(66.0, y + 4.0), Vector2(166.0, 22.0), 12, COLOR_PARCHMENT))
 		parent.add_child(_make_label(str(data["class"]), Vector2(66.0, y + 25.0), Vector2(166.0, 18.0), 9, COLOR_GOLD))
+
+	for id in _weapon_slots:
+		(_weapon_slots[id] as QuickSlot).set_selected(str(id) == _equipped)
+	if _armory_tab == "weapons":
+		_update_weapon_detail(_equipped)
+
+## The weapon ids the armory should list: every weapon until the HUD locks the
+## satchel to the hero's class, then only that hero's arm.
+func _armory_weapon_ids() -> Array:
+	if _allowed_weapons.is_empty():
+		return WeaponLibrary.ORDER
+	var ids: Array = []
+	for weapon_id in WeaponLibrary.ORDER:
+		if _allowed_weapons.has(weapon_id):
+			ids.append(weapon_id)
+	return ids
+
+## Locks the armory to a specific hero. Pass an empty array to show everything
+## (debug runs keep the old behaviour).
+func set_allowed_weapons(weapon_ids: Array) -> void:
+	_allowed_weapons = weapon_ids.duplicate()
+	if _weapon_slots.is_empty():
+		return
+	_build_armory()
 
 ## The second page of the armory. Off-hands live on the left arm, so every hero
 ## can carry one of these from the first minute of the game.
@@ -337,6 +379,13 @@ func consume_item(item_id: String) -> bool:
 		if count <= 0:
 			return false
 		entry["stack"] = count - 1
+		if count - 1 <= 0:
+			# Empty stacks leave the satchel entirely, freeing the grid slot for
+			# the next cache and keeping the carry count honest.
+			_items.remove_at(i)
+			refresh_counts()
+			call_deferred("_rebuild_items")
+			return true
 		if i < _item_slots.size():
 			_item_slots[i].set_stack(count - 1)
 			var suffix := ""
@@ -359,7 +408,8 @@ func add_item(item_id: String, amount := 1) -> bool:
 		entry["stack"] = total
 		if i < _item_slots.size():
 			_item_slots[i].set_stack(total)
-			_item_slots[i].tooltip_text = "%s  ×%d" % [str(entry["name"]), total]
+			var suffix := "  ×%d" % total if total > 1 else ""
+			_item_slots[i].tooltip_text = "%s%s" % [str(entry["name"]), suffix]
 		return true
 	if _items.size() >= GRID_SLOTS:
 		return false
@@ -382,6 +432,48 @@ func get_item_count(item_id: String) -> int:
 		if str(entry.get("id", "")) == item_id:
 			return int(entry["stack"])
 	return 0
+
+func get_item_display_name(item_id: String) -> String:
+	if ITEM_DEFINITIONS.has(item_id):
+		return str(ITEM_DEFINITIONS[item_id]["name"])
+	for entry in _items:
+		if str(entry.get("id", "")) == item_id:
+			return str(entry.get("name", item_id))
+	return item_id.capitalize()
+
+## A plain id → stack snapshot for SaveManager. Only carried stacks are
+## recorded; empty grid slots contribute nothing.
+func get_save_items() -> Dictionary:
+	var stacks := {}
+	for entry in _items:
+		var item_id := str(entry.get("id", ""))
+		var count := int(entry.get("stack", 0))
+		if item_id.is_empty() or count <= 0:
+			continue
+		stacks[item_id] = count
+	return stacks
+
+## Rebuilds the satchel from a save. The initial demo satchel is discarded;
+## whatever the save lists is what the hero is carrying. Offerings the save
+## does not know about are skipped.
+func restore_items(stacks: Dictionary) -> void:
+	_items.clear()
+	for item_id in stacks.keys():
+		var count := int(stacks[item_id])
+		if count <= 0 or not ITEM_DEFINITIONS.has(item_id):
+			continue
+		if _items.size() >= GRID_SLOTS:
+			break
+		var definition: Dictionary = ITEM_DEFINITIONS[item_id]
+		_items.append({
+			"id": item_id,
+			"icon": definition["icon"],
+			"name": definition["name"],
+			"stack": count,
+			"description": definition["description"],
+		})
+	_rebuild_items()
+	refresh_counts()
 
 func set_gold(value: int) -> void:
 	$Panel/GoldValue.text = _format_number(value)
@@ -407,8 +499,14 @@ func _format_number(number: int) -> String:
 
 func _on_weapon_slot(weapon_id: String) -> void:
 	_update_weapon_detail(weapon_id)
+	if not _weapon_allowed(weapon_id):
+		_weapon_detail_desc.text = "%s\n\nThis arm belongs to another road. Only your own weapon may be drawn." % str(WeaponLibrary.WEAPONS[weapon_id]["description"])
+		return
 	_weapon_slots[weapon_id].set_selected(true)
 	weapon_selected.emit(weapon_id)
+
+func _weapon_allowed(weapon_id: String) -> bool:
+	return _allowed_weapons.is_empty() or _allowed_weapons.has(weapon_id)
 
 func _on_offhand_slot(offhand_id: String) -> void:
 	_update_offhand_detail(offhand_id)

@@ -146,7 +146,11 @@ func _check_initial_gates() -> void:
 			_check("gate exists for edge %s" % key, false)
 			continue
 		var collider: CollisionShape3D = gate["collision"]
-		var should_shut := String(rooms[parent]["type"]) == "combat" or String(rooms[i]["type"]) == "boss"
+		var should_shut := (
+			String(rooms[parent]["type"]) == "combat"
+			or String(rooms[parent]["type"]) == "trap"
+			or String(rooms[i]["type"]) == "boss"
+		)
 		var is_shut := not bool(collider.disabled)
 		_check(
 			"initial gate %s (%s)" % [key, "shut" if should_shut else "open"],
