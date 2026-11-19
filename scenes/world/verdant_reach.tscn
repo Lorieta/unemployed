@@ -197,7 +197,7 @@ accent_color = Color(0.4, 0.34, 0.22, 1)
 carries_lantern = true
 
 [node name="Hollis" parent="NPCs" unique_id=1883402715 instance=ExtResource("8_townsfolk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.2, 0, 29.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0, 31)
 npc_id = "hollis"
 display_name = "Hollis"
 role = "merchant"
@@ -233,7 +233,7 @@ accent_color = Color(0.58, 0.42, 0.2, 1)
 hat_style = "cap"
 
 [node name="Tilda" parent="NPCs" unique_id=1720913548 instance=ExtResource("8_townsfolk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.8, 0, -18.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0, -19)
 npc_id = "tilda"
 display_name = "Tilda"
 role = "merchant"
@@ -377,6 +377,8 @@ xp_reward = 650.0
 gold_reward = 260
 boss = true
 dormant = true
+boss_respawns = true
+boss_respawn_delay = 240.0
 
 [node name="EmberHound1" parent="Monsters" instance=ExtResource("9_monster")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -122)
@@ -522,6 +524,8 @@ xp_reward = 1500.0
 gold_reward = 500
 boss = true
 dormant = true
+boss_respawns = true
+boss_respawn_delay = 300.0
 
 [node name="Human" parent="." unique_id=497751500 instance=ExtResource("1_human")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)

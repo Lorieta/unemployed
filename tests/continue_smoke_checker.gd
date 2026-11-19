@@ -41,10 +41,11 @@ func _run_checks() -> void:
 	if int(hud._story_stage) != 3:
 		failures += 1; print("FAIL story stage: ", hud._story_stage)
 
-	# The lit shrine must have woken the Warden on load.
+	# The lit shrine must have woken the Briar Warden on load. Other named
+	# elites (the Barrow King) keep their authored sleeping habit.
 	var woke := true
 	for boss in get_tree().get_nodes_in_group("enemy_boss"):
-		if bool(boss.get("dormant")):
+		if str(boss.get("variant")) == "briar_warden" and bool(boss.get("dormant")):
 			woke = false
 	if not woke:
 		failures += 1; print("FAIL boss not awakened after continue")

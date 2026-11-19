@@ -797,7 +797,7 @@ const BUFF_AURA_COLORS := {
 	"mend": Color(1.0, 0.75, 0.85),
 }
 
-func apply_buff(kind: String, amount: float, duration: float) -> void:
+func apply_buff(kind: String, amount: float, duration: float, label := "") -> void:
 	match kind:
 		"power":
 			_buff_power += amount
@@ -812,7 +812,8 @@ func apply_buff(kind: String, amount: float, duration: float) -> void:
 	_buff_expiry[kind] = maxf(float(_buff_expiry.get(kind, 0.0)), duration)
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud != null and hud.has_method("show_toast"):
-		hud.call("show_toast", "Rune of %s surges through you!" % kind.capitalize(), 2.6)
+		var source := str(label) if not str(label).is_empty() else "Rune of %s" % kind.capitalize()
+		hud.call("show_toast", "%s surges through you!" % source, 2.6)
 	_light_buff_aura(kind)
 
 func _update_buffs(delta: float) -> void:

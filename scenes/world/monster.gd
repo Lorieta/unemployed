@@ -57,10 +57,16 @@ func _theme(key: String, fallback: Color) -> Color:
 @export var boss := false
 @export var dormant := false
 @export var respawn_delay := 15.0
+## Named bosses can be given a long but finite return: the Warden and the
+## Barrow King rise again once their arena has been quiet for this long.
+## Dungeon bosses leave this off — their floors own the lifecycle.
+@export var boss_respawns := false
+@export var boss_respawn_delay := 240.0
 
 var health := 70.0
 
 var _dead := false
+var _start_dormant := false
 var _time := 0.0
 var _chasing := false
 var _swing := 0.0
@@ -111,6 +117,7 @@ func _ready() -> void:
 		leash_range = maxf(leash_range, 40.0)
 	_spawn_position = global_position
 	_spawn_rotation = rotation.y
+	_start_dormant = dormant
 	health = max_health
 	_wisp = variant == "wisp" or variant == "cinder_imp"
 	_collision = get_node_or_null("CollisionShape3D") as CollisionShape3D
@@ -1432,6 +1439,25 @@ func mark_defeated() -> void:
 	if _bar_root != null:
 		_bar_root.visible = false
 	visible = false
+	if boss and boss_respawns:
+		_schedule_boss_respawn()
+
+## A saved-felled boss still keeps its return clock: marking it down only
+## quiets the arena for a while, then the named elite rises again.
+func _schedule_boss_respawn() -> void:
+	await get_tree().create_timer(boss_respawn_delay).timeout
+	if not is_inside_tree() or not _dead:
+		return
+	_respawn()
+
+## The Warden stays shrine-bound; every other named elite returns awake.
+func _shrine_wakens() -> bool:
+	if variant != "briar_warden":
+		return true
+	var shrine := get_tree().get_first_node_in_group("shrine")
+	if shrine == null or not shrine.has_method("is_lit"):
+		return false
+	return bool(shrine.call("is_lit"))
 
 func is_defeated() -> bool:
 	return _dead
@@ -1459,9 +1485,10 @@ func _die() -> void:
 	if not is_inside_tree():
 		return
 	visible = false
-	if boss:
+	if boss and not boss_respawns:
 		return
-	await get_tree().create_timer(respawn_delay).timeout
+	var delay := boss_respawn_delay if boss else respawn_delay
+	await get_tree().create_timer(delay).timeout
 	if not is_inside_tree():
 		return
 	_respawn()
@@ -1471,11 +1498,19 @@ func _respawn() -> void:
 	rotation.y = _spawn_rotation
 	health = max_health
 	_dead = false
+	# A returning elite keeps its authored sleeping habit except for the Warden,
+	# which wakes for a lit shrine and otherwise waits to be disturbed again.
+	dormant = _start_dormant and not _shrine_wakens()
 	_chasing = false
 	_swing = 0.0
 	_attack_type = "claw"
 	_attack_flags.clear()
 	_special_cooldown = 0.0
+	_slow_time = 0.0
+	_slow_factor = 1.0
+	_distract_time = 0.0
+	_poison_time = 0.0
+	_poison_dps = 0.0
 	_bar_ghost = 1.0
 	_last_hit_time = -10.0
 	visible = true

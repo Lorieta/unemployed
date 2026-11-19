@@ -56,6 +56,7 @@ const STORY_REWARD_B_XP := 1400.0
 const SIDE_REWARD_GOLD := 90
 const SIDE_REWARD_XP := 320.0
 const DEATH_GOLD_LOSS := 40
+const SHRINE_BLESSING_COOLDOWN := 90.0
 
 const QUICK_ITEM_IDS := ["health", "mana", "torch", "return", "moonpetal"]
 
@@ -63,6 +64,7 @@ const ZONE_INFO := {
 	"town": {"title": "HEARTHMERE", "subtitle": "A LANTERN TOWN IN THE VERDANT REACH"},
 	"field": {"title": "THE THORNED FIELD", "subtitle": "BEYOND HEARTHMERE'S GATE"},
 	"shrine": {"title": "THE WAYSHRINE", "subtitle": "A QUIET CLEARING IN THE BRIARS"},
+	"hollow": {"title": "THE BRIAR HOLLOW", "subtitle": "A CAVE MOUTH IN THE WESTERN ROCKS"},
 	"warden": {"title": "THE WARDEN'S CLEARING", "subtitle": "OLD STONE AND LIVING THORNS"},
 	"barrows": {"title": "THE ASHEN BARROWS", "subtitle": "THE SCORCHED SOUTH  ·  HERE KINGS SLEEP ANGRY"},
 }
@@ -183,6 +185,7 @@ var _shop: OverlayPanel
 var _purchases := {"mira": {}, "bran": {}}
 var _zone_id := ""
 var _zone_timer := 0.0
+var _shrine_blessing_time := 0.0
 var _falling := false
 
 func _ready() -> void:
@@ -806,68 +809,169 @@ func _on_inventory_offhand_selected(offhand_id: String) -> void:
 func _on_inventory_item_used(item_id: String) -> void:
 	match item_id:
 		"health":
-			if _health >= _max_health - 0.5:
-				show_toast("Your health is already full.")
-				return
-			if _inventory.get_item_count(item_id) <= 0:
-				show_toast("No crimson draughts remain.  Mira sells more.")
-				return
-			_health = minf(_max_health, _health + 45.0)
-			_refresh_vitals()
-			_inventory.consume_item(item_id)
-			_sync_item_stacks()
-			show_toast("The crimson draught restores 45 health.")
+			_use_heal_item(item_id, 45.0, "The crimson draught restores 45 health.")
+		"health_greater":
+			_use_heal_item(item_id, 90.0, "The greater draught closes your wounds.")
 		"mana":
-			if _mana >= _max_mana - 0.5:
-				show_toast("Your mana is already full.")
-				return
-			if _inventory.get_item_count(item_id) <= 0:
-				show_toast("No azure draughts remain.  Mira sells more.")
-				return
-			_mana = minf(_max_mana, _mana + 40.0)
-			_refresh_vitals()
-			_inventory.consume_item(item_id)
-			_sync_item_stacks()
-			show_toast("The azure draught restores 40 mana.")
+			_use_mana_item(item_id, 40.0, "The azure draught restores 40 mana.")
+		"mana_greater":
+			_use_mana_item(item_id, 80.0, "The greater draught refills your reserve.")
 		"waybread":
-			if _health >= _max_health - 0.5:
-				show_toast("Your health is already full.")
+			_use_heal_item(item_id, 25.0, "The waybread restores 25 health.")
+		"elixir":
+			if _health >= _max_health - 0.5 and _mana >= _max_mana - 0.5:
+				show_toast("You are already whole.")
 				return
-			if _inventory.get_item_count(item_id) <= 0:
-				show_toast("The waybread is gone.")
+			if not _consume_item(item_id):
 				return
-			_health = minf(_max_health, _health + 25.0)
+			_health = minf(_max_health, _health + 60.0)
+			_mana = minf(_max_mana, _mana + 50.0)
 			_refresh_vitals()
-			_inventory.consume_item(item_id)
-			_sync_item_stacks()
-			show_toast("The waybread restores 25 health.")
+			show_toast("The elixir restores 60 health and 50 mana.")
+		"ember_tonic":
+			if not _consume_item(item_id):
+				return
+			if _player != null:
+				_player.call("apply_buff", "power", 6.0, 30.0, "Ember Tonic")
+			show_toast("The ember tonic lends your arm +6 power for 30 seconds.")
+		"frost_salve":
+			if not _consume_item(item_id):
+				return
+			if _player != null:
+				_player.call("apply_buff", "ward", 0.15, 30.0, "Frost Salve")
+			show_toast("The frost salve numbs you to 15% of every blow for 30 seconds.")
+		"smoke_bomb":
+			if not _consume_item(item_id):
+				return
+			_break_enemy_focus()
+			show_toast("Smoke bursts across the hall.  The beasts lose your scent.")
+		"moonpetal":
+			if not _consume_item(item_id):
+				return
+			_mana = minf(_max_mana, _mana + 20.0)
+			if _player != null:
+				_player.call("apply_buff", "mend", 3.0, 8.0, "Moonpetal")
+			_refresh_vitals()
+			show_toast("The moonpetal restores 20 mana and steadies your breathing.")
 		"torch":
 			if _player != null:
 				var on := bool(_player.call("is_torch_on"))
 				_player.call("set_torch", not on)
 				show_toast("You smother the torch.  The dusk returns." if on else "The pitch torch catches with a warm crackle.")
 		"return":
+			if not _consume_item(item_id):
+				return
 			if _player != null:
 				_player.call("return_to_spawn")
 			show_toast("The scroll's runes flare.  You stand beside the old well again.")
 		"map":
 			_inventory.close()
 			_show_map()
-		"moonpetal":
-			show_toast("Moonpetal.  A pale herb that opens only at dusk.")
 		"soulstone":
-			show_toast("The soulstone hums.  Somewhere, the Reach answers.")
-		"key":
-			show_toast("A cold iron key.  No lock in the grove fits it.")
+			if not _consume_item(item_id):
+				return
+			_add_xp(250.0)
+			show_toast("The soulstone dissolves into 250 experience.")
 		"ring":
-			show_toast("The band is warm, as though someone just slipped it off.")
+			if not _consume_item(item_id):
+				return
+			if _player != null:
+				_player.call("upgrade_weapon_power", 2.0)
+			show_toast("The band settles on your finger.  +2 attack power for the journey.")
 		"gold":
-			show_toast("Eighty-six coins.  A wayfarer's honest wage.")
+			if not _consume_item(item_id):
+				return
+			_gold += 50
+			_refresh_progress()
+			show_toast("You empty the purse.  +50 gold.")
+		"key":
+			show_toast("A cold iron key.  Somewhere below, a lock may still fit it.")
 		"shield":
-			show_toast("You raise the oaken buckler.  It has seen worse roads.")
+			if _player != null:
+				_player.call("equip_offhand", "shield")
+				_inventory.set_equipped_offhand("shield")
+			show_toast("You take up the oaken shield.  It has seen worse roads.")
 		_:
 			show_toast("You turn the keepsake over in your hand.")
 	_sync_item_stacks()
+	_save_run()
+
+func _consume_item(item_id: String) -> bool:
+	if _inventory.get_item_count(item_id) <= 0:
+		show_toast("You have no %s left." % _inventory.get_item_display_name(item_id).to_lower())
+		return false
+	return _inventory.consume_item(item_id)
+
+func _use_heal_item(item_id: String, amount: float, message: String) -> void:
+	if _health >= _max_health - 0.5:
+		show_toast("Your health is already full.")
+		return
+	if not _consume_item(item_id):
+		return
+	_health = minf(_max_health, _health + amount)
+	_refresh_vitals()
+	show_toast(message)
+
+func _use_mana_item(item_id: String, amount: float, message: String) -> void:
+	if _mana >= _max_mana - 0.5:
+		show_toast("Your mana is already full.")
+		return
+	if not _consume_item(item_id):
+		return
+	_mana = minf(_max_mana, _mana + amount)
+	_refresh_vitals()
+	show_toast(message)
+
+func _break_enemy_focus() -> void:
+	if _player == null:
+		return
+	var origin: Vector3 = _player.global_position
+	if _player.has_method("apply_buff"):
+		_player.call("apply_buff", "haste", 0.25, 3.5, "Smoke Bomb")
+	for enemy in get_tree().get_nodes_in_group("enemy"):
+		if not is_instance_valid(enemy) or not enemy is Node3D:
+			continue
+		var enemy_node := enemy as Node3D
+		if enemy_node.global_position.distance_to(origin) > 9.5:
+			continue
+		var decoy := origin + Vector3(randf_range(-3.5, 3.5), 0.0, randf_range(-3.5, 3.5))
+		if enemy.has_method("distract"):
+			enemy.call("distract", decoy, 2.6)
+		if enemy.has_method("apply_slow"):
+			enemy.call("apply_slow", 0.45, 2.2)
+
+## Called by dungeon chests. Adds the rolled haul to the satchel and purse,
+## reports it in one toast, and writes the run so a cache cannot be farmed by
+## quitting before the next autosave.
+func grant_dungeon_loot(entries: Array, gold: int, source := "cache") -> void:
+	var notes: Array[String] = []
+	if gold > 0:
+		_gold += gold
+		notes.append("%d gold" % gold)
+	for entry in entries:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var item_id := str((entry as Dictionary).get("id", ""))
+		var amount := int((entry as Dictionary).get("amount", 1))
+		if item_id.is_empty() or amount <= 0:
+			continue
+		var item_name := _inventory.get_item_display_name(item_id)
+		if _inventory.add_item(item_id, amount):
+			notes.append("%s ×%d" % [item_name, amount] if amount > 1 else item_name)
+		else:
+			notes.append("no room for %s" % item_name)
+	_refresh_progress()
+	_sync_item_stacks()
+	_save_run()
+	if notes.is_empty():
+		show_toast("The %s is empty." % source, 2.6)
+		return
+	var summary := ""
+	for note in notes:
+		if not summary.is_empty():
+			summary += ", "
+		summary += note
+	show_toast("The %s yields %s." % [source, summary], 4.2)
 
 func _show_journal() -> void:
 	if _journal.visible:
@@ -891,6 +995,12 @@ func _story_snapshot() -> Dictionary:
 		"shrine": _shrine_lit,
 		"boss": _boss_defeated,
 	}
+
+## The dungeon entrance asks this instead of reading the shrine node alone.
+## Once the Rowan/shrine milestone is reached it stays true across saves, so a
+## continued journey can always return to the Under-Reach.
+func is_dungeon_unlocked() -> bool:
+	return _shrine_lit or _story_stage >= 4 or _boss_defeated
 
 func _show_map() -> void:
 	if _map.visible:
@@ -1507,7 +1617,20 @@ func on_shrine_interact(shrine: Node) -> void:
 	if shrine.has_method("is_lit"):
 		already_lit = already_lit or bool(shrine.call("is_lit"))
 	if already_lit:
-		show_toast("The wayshrine burns steadily.  The briars keep their distance.")
+		if _shrine_blessing_time > 0.0:
+			show_toast("The wayshrine burns steadily.  Its blessing returns in %d seconds." % ceili(_shrine_blessing_time))
+			return
+		var missing_health := _max_health - _health
+		var missing_mana := _max_mana - _mana
+		if missing_health < 1.0 and missing_mana < 1.0:
+			show_toast("The wayshrine burns steadily.  You are already whole.")
+			return
+		_shrine_blessing_time = SHRINE_BLESSING_COOLDOWN
+		_health = _max_health
+		_mana = _max_mana
+		_refresh_vitals()
+		show_toast("The wayshrine's blessing restores you.  +%d health  ·  +%d mana." % [roundi(missing_health), roundi(missing_mana)])
+		_save_run()
 		return
 	if _story_stage < 3:
 		show_toast("The shrine is cold and dark.  Elder Rowan may know how to wake it.")
@@ -1678,6 +1801,10 @@ func _apply_run_data() -> void:
 	_wolves_culled = maxi(0, int(data.get("wolves_culled", 0)))
 	_shrine_lit = bool(data.get("shrine_lit", false))
 	_boss_defeated = bool(data.get("boss_defeated", false))
+	# The Rowan milestone is authoritative: story stage 4+ means the shrine was
+	# woken, even if an older save omitted the visual flag.
+	if _story_stage >= 4:
+		_shrine_lit = true
 
 	_health = _max_health
 	_mana = _max_mana
@@ -1688,8 +1815,10 @@ func _apply_run_data() -> void:
 	if saved_mana >= 0.0:
 		_mana = clampf(saved_mana, 0.0, _max_mana)
 
-	var items: Dictionary = data.get("items", {})
-	if not items.is_empty():
+	# An explicitly saved empty satchel must clear the demo inventory. Only a
+	# save that never recorded items leaves the starting kit in place.
+	if data.has("items"):
+		var items: Dictionary = data.get("items", {})
 		_inventory.restore_items(items)
 
 	_inventory.set_allowed_weapons([CharacterLibrary.weapon_of(_character_id)])
@@ -1697,14 +1826,19 @@ func _apply_run_data() -> void:
 		_skill_list.call("set_allowed_school", _allowed_school)
 
 	# The world remembers: a lit shrine wakes the Warden, a defeated Warden
-	# rests where it fell.
+	# rests where it fell. Boss respawns then carry on from the saved state.
 	if _shrine_lit:
+		var shrine := get_tree().get_first_node_in_group("shrine")
+		if shrine != null and shrine.has_method("restore_lit"):
+			shrine.call("restore_lit")
 		for boss in get_tree().get_nodes_in_group("enemy_boss"):
-			if is_instance_valid(boss) and boss.has_method("awaken"):
+			if is_instance_valid(boss) and str(boss.get("variant")) == "briar_warden" \
+					and boss.has_method("awaken"):
 				boss.call("awaken")
 	if _boss_defeated:
 		for boss in get_tree().get_nodes_in_group("enemy_boss"):
-			if is_instance_valid(boss) and boss.has_method("mark_defeated"):
+			if is_instance_valid(boss) and str(boss.get("variant")) == "briar_warden" \
+					and boss.has_method("mark_defeated"):
 				boss.call("mark_defeated")
 
 	$Root/PlayerPanel/Name.text = _character_name
@@ -1789,6 +1923,8 @@ func _update_zone(delta: float) -> void:
 		id = "barrows"
 	elif position.z < -86.0:
 		id = "warden"
+	elif position.distance_to(Vector3(-17.5, 0.0, -83.0)) < 10.5:
+		id = "hollow"
 	elif position.distance_to(Vector3(-6.0, 0.0, -74.0)) < 14.0:
 		id = "shrine"
 	elif position.z < -31.0:
@@ -1954,6 +2090,8 @@ func _process(delta: float) -> void:
 	_update_aim()
 	_update_zone(delta)
 	_update_boss_bar()
+	if _shrine_blessing_time > 0.0:
+		_shrine_blessing_time = maxf(0.0, _shrine_blessing_time - delta)
 
 	var vitals_changed := false
 	if _health < _max_health:

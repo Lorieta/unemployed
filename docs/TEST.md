@@ -2,10 +2,10 @@
 
 ## Infinite Dungeon (Under-Reach)
 
-The dungeon runs embedded inside Verdant Reach: the sunken stone ring beside
-the wayshrine leads down into the Under-Reach in a dedicated layer ~120 m
-below the world. There is no menu button; the standalone
-`scenes/dungeon/dungeon.tscn` remains as a developer harness.
+The dungeon runs embedded inside Verdant Reach: a briar-sealed cave mouth in
+the western rocks, set back from the wayshrine, leads down into the Under-Reach
+in a dedicated layer ~120 m below the world. There is no menu button; the
+standalone `scenes/dungeon/dungeon.tscn` remains as a developer harness.
 
 ### Automated checks
 
@@ -16,6 +16,9 @@ godot --headless -s res://scripts/dungeon/debug_check.gd       # pure layout log
 godot --headless -s res://scripts/dungeon/debug_escape.gd      # style rotation, Collapsing Vault, traps, full-clear gate/stair, restore, high-floor mobs
 godot --headless -s res://scripts/dungeon/debug_sim.gd         # standalone harness: gating, room clears, boss, descend to depth 2
 godot --headless -s res://scripts/dungeon/debug_world_sim.gd   # world integration: entrance gating, entry, ascend/exit, lighting, restore
+godot --headless -s res://scripts/dungeon/debug_persistence.gd # continued save: lit shrine restored, entrance stays open without re-lighting
+godot --headless -s res://scripts/dungeon/debug_boss_respawn.gd # named-boss return timing after mark_defeated
+godot --headless -s res://scripts/dungeon/debug_chest.gd       # treasure cache loot, one-shot open, open state restored on revisit
 ```
 
 Each prints a result line and exits non-zero on failure. The layout and runtime
@@ -64,8 +67,8 @@ stay deterministic.
 
 ### Manual QA checklist
 
-- [ ] The wayshrine is dark at the start; walking onto the stone ring east of it (`-13.5, -79.5`) targets the entrance and shows "The ring is dormant - light the wayshrine". Pressing E explains that the shrine must wake first.
-- [ ] After lighting the shrine, standing anywhere on the ring shows "Descend into the Under-Reach"; pressing E drops the hero into the Moss Crypt entrance and the world darkens around the hero.
+- [ ] The wayshrine is dark at the start; walking up to the briar-sealed cave mouth in the western rocks (`-17.5, -83`) targets the entrance and shows "The cave is sealed by briars - light the wayshrine". Pressing E explains that the shrine must wake first.
+- [ ] After lighting the shrine, approaching the cave mouth shows "Descend into the Under-Reach"; pressing E drops the hero into the Moss Crypt entrance and the world darkens around the hero.
 - [ ] The hero spawns just inside the entrance's first door; an ascent stairwell waits in the room center.
 - [ ] Walking into a combat room slams the door shut behind you (portcullis bars) and the hall holds 2+ monsters.
 - [ ] Clearing every monster in the hall reopens the gates with a toast.
@@ -85,6 +88,33 @@ stay deterministic.
 - [ ] Dying in the dungeon (game-over) sends the hero back to the surface spawn with the run reset.
 - [ ] No fall-rescue misfires while inside the dungeon; walking off the surface map still respawns the hero if the dungeon's gate logic allows.
 - [ ] ESC pause, skill slots and inventory all behave inside the dungeon floors.
+- [ ] Every treasure room holds a glowing **Grand Cache**; opening it shakes the chest, throws the lid, spills light and coins, and adds gold plus 3 item stacks to the satchel and purse.
+- [ ] Some combat halls hide a smaller **Old Cache**; it uses the same opening animation and a smaller common haul.
+- [ ] An opened cache cannot be opened again, and climbing down then back up restores it in its open pose without a second haul.
+- [ ] Using a potion from the satchel removes one stack; the last use removes the empty stack from the grid instead of leaving a `0` entry.
+- [ ] Continue restores the exact saved satchel, including an intentionally empty one, and dungeon loot is written to the save immediately.
+
+### Persistence and overworld return
+
+- [ ] Light the wayshrine, then quit to the title screen and choose Continue. The shrine is already lit (no re-lighting needed), the cave mouth shows "Descend into the Under-Reach", and E opens the dungeon normally.
+- [ ] A save that has `story_stage >= 4`, `shrine_lit`, or `boss_defeated` keeps the cave open even if the shrine scene loads dark.
+- [ ] After a save is reloaded, the shrine's crystal, light and rune ring are all restored without replaying the lighting pulse.
+- [ ] Touch a lit shrine while wounded: the blessing refills health and mana, saves the run, and reports a 90-second cooldown on the next touch.
+- [ ] Touch a lit shrine at full health and mana: it says the hero is already whole and does not start the cooldown.
+
+### Overworld boss respawns
+
+- [ ] Kill the Briar Warden: it stays down, the arena quiets, and it returns to the arena at full health after roughly 240 seconds.
+- [ ] Kill the Barrow King: it returns after roughly 300 seconds.
+- [ ] A boss saved as defeated starts down on Continue but still keeps its return clock.
+- [ ] Dungeon bosses still stay dead for the floor's lifecycle (`boss_respawns` is off for dungeon-spawned elites).
+
+### Hearthmere and Thorned Field dressing
+
+- [ ] Hearthmere shows the communal bread oven and bread cart near the north road/market, the chapel bell frame, and three bee skeps beside the chapel wall.
+- [ ] The north road has its own lamps, a granary signpost and a chapel bench; the plaza, practice field, gate road and shop fronts stay clear.
+- [ ] The Thorned Field shows the poacher's camp in the western briars, the memorial below the ruined arch, the old orchard and grave row to the east, and the prayer posts at the shrine's edge.
+- [ ] All new props stay clear of the field road, shrine ring, cave approach, Warden arena and fixed monster spawns.
 
 ### Known limitations
 

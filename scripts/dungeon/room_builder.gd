@@ -8,6 +8,7 @@ extends RefCounted
 ## enclosed except at door holes.
 
 const Layout := preload("res://scripts/dungeon/layout_generator.gd")
+const CHEST := preload("res://scripts/dungeon/dungeon_chest.gd")
 
 const WALL_HEIGHT := 4.6
 const WALL_THICKNESS := 0.6
@@ -231,11 +232,28 @@ static func _build_room(root: Node3D, rooms: Array, index: int, doors: Array[Vec
 				stone.rotation.y = -angle
 			_build_entrance_gate(node, biome)
 		"treasure":
-			_build_treasure(node, biome)
+			record["chest"] = _build_treasure(node, biome)
+			record["blocked_points"].append(Vector3(0.0, 0.0, 0.3))
 			if not escape:
 				_build_treasure_dressing(node, half, biome, rng, doors)
 		"trap":
 			_build_trap_room_dressing(node, half, biome, rng)
+		"combat":
+			# Some halls hide a smaller cache among the crypt clutter. It is a
+			# reward for exploring the room, not a replacement for the Grand
+			# Cache in the treasure chamber.
+			if not escape and rng.randf() < 0.38:
+				var cache_spot := _random_inner_point(half, door_points, record["blocked_points"], 3.6, rng, 14)
+				if cache_spot != Vector3.ZERO:
+					var cache := CHEST.new()
+					cache.name = "OldCache"
+					cache.loot_quality = "common"
+					cache.chest_label = "Old Cache"
+					cache.position = cache_spot
+					cache.rotation.y = rng.randf() * TAU
+					node.add_child(cache)
+					record["chest"] = cache
+					record["blocked_points"].append(Vector3(cache_spot.x, 0.0, cache_spot.z))
 		"boss":
 			if escape:
 				_build_exit_chamber(node, biome)
@@ -792,14 +810,13 @@ static func _build_brazier(parent: Node3D, offset: Vector3, biome: Dictionary) -
 	light.position = offset + Vector3(0.0, 1.7, 0.0)
 	parent.add_child(light)
 
-static func _build_treasure(node: Node3D, biome: Dictionary) -> void:
-	var wood := _mat(Color(0.4, 0.28, 0.14), 0.9)
-	var trim := _mat(biome["accent"], 0.4, 0.7)
-	_add_solid_box(node, Vector3(0.0, 0.3, 0.3), Vector3(1.1, 0.6, 0.7), wood)
-	_add_solid_box(node, Vector3(0.0, 0.68, 0.3), Vector3(1.2, 0.2, 0.8), trim)
-	for i in 5:
-		var coin := _add_mesh_sphere(node, Vector3(-0.3 + 0.15 * float(i), 0.16, -0.45), _mat(Color(0.9, 0.72, 0.3), 0.35, 0.9))
-		coin.scale = Vector3(0.48, 0.2, 0.48)
+static func _build_treasure(node: Node3D, biome: Dictionary) -> Node3D:
+	var chest := CHEST.new()
+	chest.name = "GrandCache"
+	chest.loot_quality = "treasure"
+	chest.chest_label = "Grand Cache"
+	chest.position = Vector3(0.0, 0.0, 0.3)
+	node.add_child(chest)
 	# A pair of candle stands flanking the chest make the cache read at a
 	# distance, even before the player's own torch reaches it.
 	var flame_material := _mat(biome["torch"], 0.3, 0.0, 2.0)
@@ -816,6 +833,7 @@ static func _build_treasure(node: Node3D, biome: Dictionary) -> void:
 	light.omni_range = 4.5
 	light.position = Vector3(0.0, 1.2, 0.0)
 	node.add_child(light)
+	return chest
 
 static func _build_boss_dais(node: Node3D, biome: Dictionary) -> void:
 	var stone := _mat(Color(biome["pillar"]).darkened(0.1), 0.9)

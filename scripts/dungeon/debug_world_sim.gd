@@ -40,17 +40,17 @@ func _run() -> void:
 		return
 	_check("entrance is targetable while shrine sleeps", entrance.call("can_interact"))
 	_check(
-		"dormant ring points at the wayshrine",
+		"dormant cave points at the wayshrine",
 		str(entrance.call("get_interaction_prompt")).to_lower().contains("wayshrine")
 	)
 	entrance.call("interact", player)
 	await _wait_frames(5)
-	_check("dormant ring refuses entry", not bool(_manager.call("is_inside_dungeon")))
-	# The ring is nearly 10 m across; a hero standing on its visible rim must
-	# still be able to target it, not just one standing in the middle.
+	_check("sealed cave refuses entry", not bool(_manager.call("is_inside_dungeon")))
+	# The cave mouth has a broad approach; a hero standing out on the apron must
+	# still be able to target it, not just one pressed against the thorns.
 	player.global_position = entrance.global_position + Vector3(0.0, 0.8, 4.6)
 	player.call("_scan_interactions", 1.0)
-	_check("ring is reachable from its outer rim", player.get("_interaction_target") == entrance)
+	_check("cave is reachable from its approach stones", player.get("_interaction_target") == entrance)
 	player.global_position = surface_spot
 
 	var shrine := get_first_node_in_group("shrine") as Node

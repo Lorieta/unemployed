@@ -246,6 +246,7 @@ func _start_floor(next_depth: int) -> void:
 	_archetype = String(_layout.get("archetype", "branch"))
 	_built = Builder.build(_chunks, _layout, _base_seed)
 	_gates = _built["gates"]
+	_rig_chests()
 	_rig_rooms()
 	_apply_initial_gates()
 	_restore_floor()
@@ -284,6 +285,18 @@ func _rebuild_chunks() -> void:
 	_chunks.name = "Chunks_Floor_%d" % depth
 	add_child(_chunks)
 	_chunks.position = Vector3(0.0, vertical_offset, 0.0)
+
+func _rig_chests() -> void:
+	for key in _built["rooms"].size():
+		var record: Dictionary = _built["rooms"][key]
+		if not record.has("chest"):
+			continue
+		var chest: Node = record["chest"]
+		if chest == null or not is_instance_valid(chest):
+			continue
+		chest.set("depth", depth)
+		chest.set("room_index", int(key))
+		chest.set("loot_seed", hash(["chest", _base_seed, depth, int(key)]))
 
 func _rig_rooms() -> void:
 	var rooms: Array = _layout["rooms"]
@@ -397,6 +410,14 @@ func _restore_floor() -> void:
 		if _rooms.has(boss_index):
 			_rooms[boss_index]["state"] = "cleared"
 		_spawn_stairs()
+	# Chests already looted on this depth stay open when the floor is revisited.
+	for index in saved.get("chests", []):
+		var record: Dictionary = _built["rooms"][int(index)] if int(index) < _built["rooms"].size() else {}
+		if record.is_empty():
+			continue
+		var chest: Node = record.get("chest")
+		if chest != null and is_instance_valid(chest) and chest.has_method("mark_opened"):
+			chest.call("mark_opened")
 
 func _spawn_ascent() -> void:
 	if _chunks == null:
@@ -965,6 +986,7 @@ func _snapshot_floor() -> void:
 		return
 	var cleared: Array = []
 	var blessed: Array = []
+	var opened_chests: Array = []
 	for key in _rooms:
 		var room: Dictionary = _rooms[key]
 		var kind := String(room["type"])
@@ -972,12 +994,17 @@ func _snapshot_floor() -> void:
 			cleared.append(int(key))
 		if bool(room["blessed"]):
 			blessed.append(int(key))
+		var record: Dictionary = _built["rooms"][int(key)]
+		var chest: Node = record.get("chest")
+		if chest != null and is_instance_valid(chest) and bool(chest.get("is_open")):
+			opened_chests.append(int(key))
 	var return_local: Vector3 = Vector3.ZERO
 	if is_instance_valid(_player):
 		return_local = _player.global_position - Vector3(0.0, vertical_offset, 0.0)
 	_floor_state[depth] = {
 		"cleared": cleared,
 		"blessed": blessed,
+		"chests": opened_chests,
 		"boss_dead": _boss_dead,
 		"return_local": return_local,
 	}
