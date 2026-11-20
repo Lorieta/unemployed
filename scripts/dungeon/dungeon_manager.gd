@@ -104,6 +104,39 @@ const VARIANT_BASES := {
 		"xp": 165.0,
 		"gold": 26,
 	},
+	"obsidian_stalker": {
+		"display": "Obsidian Stalker",
+		"health": 310.0,
+		"damage": 25.0,
+		"speed": 4.3,
+		"attack_range": 2.6,
+		"attack_interval": 1.5,
+		"aggro": 18.0,
+		"xp": 195.0,
+		"gold": 30,
+	},
+	"hollow_acolyte": {
+		"display": "Hollow Acolyte",
+		"health": 245.0,
+		"damage": 27.0,
+		"speed": 2.1,
+		"attack_range": 8.5,
+		"attack_interval": 2.2,
+		"aggro": 19.0,
+		"xp": 215.0,
+		"gold": 32,
+	},
+	"cinder_colossus": {
+		"display": "Cinder Colossus",
+		"health": 540.0,
+		"damage": 36.0,
+		"speed": 2.4,
+		"attack_range": 3.8,
+		"attack_interval": 2.2,
+		"aggro": 19.0,
+		"xp": 330.0,
+		"gold": 46,
+	},
 }
 ## The deeper crypts are ruled by the dead of the barrows: the Briar Warden
 ## keeps the shallow halls, and from the third depth down a Barrow King sits on
@@ -152,6 +185,17 @@ const BOSS_BASES := {
 		"aggro": 26.0,
 		"xp": 950.0,
 		"gold": 440,
+	},
+	"ashen_sovereign": {
+		"display": "Ashen Sovereign",
+		"health": 1350.0,
+		"damage": 38.0,
+		"speed": 3.1,
+		"attack_range": 4.0,
+		"attack_interval": 2.0,
+		"aggro": 30.0,
+		"xp": 2200.0,
+		"gold": 900,
 	},
 }
 
@@ -458,6 +502,7 @@ func _difficulty_scale() -> float:
 
 ## Enemy tiers roll forward with depth: the weak crypt-folk disappear from the
 ## pool instead of following the hero forever, and the dead take their place.
+## Past the barrows, the Hollow Crown's glass hunters and cinder-kin join in.
 func _pick_variant() -> String:
 	var pool: Array[String]
 	if depth <= 1:
@@ -468,13 +513,18 @@ func _pick_variant() -> String:
 		pool = ["ember_hound", "cinder_imp", "barrow_wight"]
 	elif depth <= 8:
 		pool = ["cinder_imp", "barrow_wight", "grave_knight"]
+	elif depth <= 11:
+		pool = ["barrow_wight", "grave_knight", "obsidian_stalker", "hollow_acolyte"]
 	else:
-		pool = ["barrow_wight", "grave_knight", "ash_revenant"]
+		pool = ["obsidian_stalker", "hollow_acolyte", "cinder_colossus", "ash_revenant"]
 	return pool[_spawn_rng.randi_range(0, pool.size() - 1)]
 
 ## The crypt's ruler changes with depth: living thorns, then the barrow dead,
-## then the wraiths and tyrants that rule the deepest vaults.
+## then the wraiths and tyrants that rule the deepest vaults, and finally the
+## Ashen Sovereign on his throne of fused blades.
 func _boss_variant() -> String:
+	if depth >= 12:
+		return "ashen_sovereign"
 	if depth >= 9:
 		return "ember_tyrant"
 	if depth >= 6:

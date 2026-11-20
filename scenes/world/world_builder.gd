@@ -18,8 +18,14 @@ const GATE_Z := -30.0
 const SHRINE_POSITION := Vector3(-6.0, 0.0, -74.0)
 ## A briar-sealed cave mouth in the western rocks, set back from the shrine and
 ## turned to face the path between the wayshrine and the field road.
-const DUNGEON_ENTRANCE_POSITION := Vector3(-17.5, 0.0, -83.0)
-const DUNGEON_ENTRANCE_YAW := 0.85
+## The cave sits well north of the briar hedge (z = -86) so its shouldered hill
+## and apron stand clear of the wall line instead of cutting through it.
+const DUNGEON_ENTRANCE_POSITION := Vector3(-20.0, 0.0, -76.0)
+const DUNGEON_ENTRANCE_YAW := 0.72
+
+## The third land: past the barrows' cold edge, under a dead red sky.
+const HOLLOW_CROWN_THRESHOLD := -157.0
+const HOLLOW_CROWN_FAR_EDGE := -215.0
 
 var _materials := {}
 var _rng := RandomNumberGenerator.new()
@@ -38,6 +44,7 @@ func _ready() -> void:
 	_build_environment_details()
 	_build_life_details()
 	_build_barrows()
+	_build_hollow_crown()
 	_build_zone_partitions()
 	_build_zone_details()
 	_build_horizon()
@@ -209,7 +216,9 @@ func _build_gate() -> void:
 	var metal := _mat(Color(0.24, 0.24, 0.25), 0.45, 0.7)
 	for side in [-1, 1]:
 		var tower := Vector3(6.2 * float(side), 0.0, GATE_Z)
-		_mesh(root, "box", tower + Vector3(0.0, 2.4, 0.0), Vector3(3.2, 4.8, 3.2), stone)
+		# The gatehouse towers are solid: their footprint is part of the wall
+		# line, not scenery the hero can walk through.
+		_gate_jamb(root, tower, Vector3(3.2, 4.8, 3.2), stone, stone_dark)
 		_mesh(root, "box", tower + Vector3(0.0, 0.3, 0.0), Vector3(3.6, 0.6, 3.6), stone_dark)
 		for i in 3:
 			_mesh(root, "box", tower + Vector3(-1.0 + 1.0 * float(i), 5.0, 1.25), Vector3(0.6, 0.5, 0.5), stone_dark)
@@ -226,8 +235,10 @@ func _build_gate() -> void:
 		light.omni_range = 6.0
 		light.position = tower + Vector3(0.0, 5.2, 2.0)
 		root.add_child(light)
-		# Stone wing walls out to the edge of the map.
+		# Stone wing walls out to the edge of the map, capped by a square post so
+		# the run ends at the boundary instead of being sliced off.
 		_make_wall(root, Vector3(19.0 * float(side), 1.3, GATE_Z), Vector3(25.0, 2.6, 0.9), stone_dark, true)
+		_wall_post(root, Vector3(30.4 * float(side), 0.0, GATE_Z), 2.9, 1.2, stone_dark, stone, PI * 0.25)
 	# Lintel and sign.
 	_mesh(root, "box", Vector3(0.0, 5.0, GATE_Z), Vector3(9.6, 0.5, 0.7), stone_dark)
 	_mesh(root, "box", Vector3(0.0, 5.45, GATE_Z), Vector3(5.2, 0.9, 0.24), wood)
@@ -808,6 +819,224 @@ func _build_barrows() -> void:
 	_firefly_swarm(root, arena + Vector3(0.0, 1.2, 0.0), 10, 6.0, Color(0.55, 0.85, 1.0))
 	_firefly_swarm(root, Vector3(-10.0, 1.0, -122.0), 8, 5.0, Color(1.0, 0.5, 0.2))
 
+	# --- Second detail pass -------------------------------------------------
+	# A grave road: paired leaning markers and cold lanterns line the way from
+	# the threshold down to the King's arena, so the barrows read as a place
+	# with a processional route rather than a scatter of props.
+	for i in 9:
+		var z := -114.0 - float(i) * 4.6
+		for side in [-1, 1]:
+			if absf(z + 138.0) < 11.0:
+				continue
+			var x := -4.0 + 5.6 * float(side) + _rng.randf_range(-0.35, 0.35)
+			var marker := _mesh(root, "prism", Vector3(x, 0.75, z), Vector3(0.34, _rng.randf_range(1.1, 1.9), 0.24), stone)
+			marker.rotation.y = -0.5 * float(side) + _rng.randf_range(-0.2, 0.2)
+			marker.rotation.z = 0.12 * float(side)
+			_mesh(root, "box", Vector3(x, 1.05, z + 0.12), Vector3(0.1, 0.34, 0.03), ember)
+			if i % 3 == 1:
+				var cage := _mesh(root, "cylinder", Vector3(x + 1.1 * float(side), 0.55, z + 0.4), Vector3(0.045, 0.055, 1.1), charred)
+				cage.rotation.z = 0.2 * float(side)
+				_mesh(root, "sphere", Vector3(x + 1.1 * float(side), 1.15, z + 0.4), Vector3(0.13, 0.16, 0.13), grave_fire)
+				var glow := OmniLight3D.new()
+				glow.light_color = Color(0.55, 0.85, 1.0)
+				glow.light_energy = 0.55
+				glow.omni_range = 3.6
+				glow.position = Vector3(x + 1.1 * float(side), 1.25, z + 0.4)
+				root.add_child(glow)
+	# Mourner statues flanking the arena approach.
+	for side in [-1, 1]:
+		var base := Vector3(-4.0 + 11.2 * float(side), 0.0, -127.0)
+		_mesh(root, "cylinder", base + Vector3(0.0, 0.18, 0.0), Vector3(0.75, 0.9, 0.35), stone)
+		var robe := _mesh(root, "cylinder", base + Vector3(0.0, 1.35, 0.0), Vector3(0.34, 0.62, 2.1), _mat(Color(0.27, 0.28, 0.3), 1.0))
+		robe.scale = Vector3(1.0, 1.0, 0.8)
+		var hood := _add_barrow_hood(root, base + Vector3(0.0, 2.45, -0.02))
+		hood.rotation.y = PI * 0.5 * float(side) + PI
+	# Ash pools: still, dark water ringed with pale mineral crust.
+	for pool in [Vector3(-18.0, 0.02, -118.0), Vector3(15.0, 0.02, -141.0), Vector3(-23.0, 0.02, -152.0)]:
+		var pool_spot: Vector3 = pool
+		_mesh(root, "cylinder", pool_spot, Vector3(2.7, 2.3, 0.05), _mat(Color(0.16, 0.19, 0.2), 0.25, 0.1))
+		for i in 7:
+			var angle := float(i) * TAU / 7.0
+			_mesh(root, "sphere", pool_spot + Vector3(cos(angle) * 2.45, 0.06, sin(angle) * 2.15), Vector3(0.34, 0.09, 0.28), ash_light)
+	# A broken barrow gate at the grave road's midpoint.
+	var old_gate := Vector3(-4.0, 0.0, -116.0)
+	for side in [-1, 1]:
+		_mesh(root, "box", old_gate + Vector3(4.4 * float(side), 1.5, 0.0), Vector3(0.55, 3.0, 0.55), stone)
+	_mesh(root, "box", old_gate + Vector3(-1.0, 3.15, 0.0), Vector3(5.6, 0.4, 0.45), stone).rotation.z = -0.09
+	_mesh(root, "box", old_gate + Vector3(2.8, 2.6, 0.0), Vector3(3.2, 0.35, 0.4), stone).rotation.z = 0.16
+
+## A mourner's bowed hood and shoulder cape for the barrow statues.
+func _add_barrow_hood(parent: Node3D, position: Vector3) -> Node3D:
+	var pivot := Node3D.new()
+	pivot.position = position
+	parent.add_child(pivot)
+	_mesh(pivot, "sphere", Vector3(0.0, 0.0, 0.0), Vector3(0.22, 0.24, 0.22), _mat(Color(0.3, 0.31, 0.33), 0.98))
+	_mesh(pivot, "prism", Vector3(0.0, 0.24, 0.08), Vector3(0.52, 0.5, 0.3), _mat(Color(0.19, 0.2, 0.22), 1.0)).rotation.x = 0.35
+	for side in [-1, 1]:
+		_mesh(pivot, "sphere", Vector3(0.34 * float(side), -0.35, 0.0), Vector3(0.24, 0.12, 0.22), _mat(Color(0.25, 0.26, 0.28), 1.0))
+	return pivot
+
+# ---------------------------------------------------------------------------
+# The Hollow Crown: the third land, past the barrows' cold edge. Obsidian
+# spires, ash rivers and a throne of fused swords. Its dead are the oldest and
+# strongest in the Reach, and their Sovereign keeps the throne at the far end.
+# ---------------------------------------------------------------------------
+
+func _build_hollow_crown() -> void:
+	var root := _group("HollowCrown")
+	var obsidian := _mat(Color(0.07, 0.065, 0.085), 0.8, 0.2)
+	var obsidian_light := _mat(Color(0.14, 0.13, 0.17), 0.75, 0.15)
+	var basalt := _mat(Color(0.19, 0.17, 0.16), 1.0)
+	var basalt_light := _mat(Color(0.26, 0.23, 0.21), 1.0)
+	var ash := _mat(Color(0.23, 0.21, 0.19), 1.0)
+	var ember := _mat(Color(1.0, 0.42, 0.12), 0.55, 0.0, 2.1)
+	var ember_deep := _mat(Color(0.8, 0.24, 0.07), 0.7, 0.0, 1.1)
+	var crown_gold := _mat(Color(1.0, 0.7, 0.26), 0.4, 0.7, 1.2)
+	var bone := _mat(Color(0.7, 0.67, 0.6), 0.95)
+	var charred := _mat(Color(0.11, 0.09, 0.08), 1.0)
+
+	# A broad ash pan replaces the green floor as soon as the crown gate is
+	# crossed, so the third land reads as a different country at a glance.
+	_mesh(root, "box", Vector3(0.0, 0.008, -186.0), Vector3(62.0, 0.05, 58.0), _mat(Color(0.16, 0.145, 0.14), 1.0))
+	for i in 28:
+		var smudge := _mesh(root, "cylinder", Vector3(_rng.randf_range(-29.0, 29.0), 0.035, _rng.randf_range(-213.0, -158.0)), Vector3(_rng.randf_range(1.2, 3.6), _rng.randf_range(1.4, 4.2), 0.02), _mat(Color(0.2, 0.18, 0.17), 1.0))
+		smudge.rotation.y = _rng.randf() * TAU
+
+	# The road runs on from the barrow gate, then breaks into cracked glass.
+	_mesh(root, "box", Vector3(-4.0, 0.02, -186.0), Vector3(3.6, 0.05, 58.0), _mat(Color(0.27, 0.24, 0.22), 1.0))
+	for i in 11:
+		var z := -160.0 - float(i) * 4.8
+		var slab := _mesh(root, "box", Vector3(-4.0 + _rng.randf_range(-1.4, 1.4), 0.04, z), Vector3(_rng.randf_range(1.4, 2.8), 0.04, 1.1), basalt_light if i % 2 == 0 else basalt)
+		slab.rotation.y = _rng.randf_range(-0.25, 0.25)
+		if i % 3 == 0:
+			var split := _mesh(root, "box", Vector3(-4.0 + _rng.randf_range(-1.8, 1.8), 0.07, z + 0.2), Vector3(0.16, 0.02, _rng.randf_range(1.2, 2.6)), ember_deep)
+			split.rotation.y = _rng.randf_range(-0.4, 0.4)
+
+	# Obsidian shard fields and black glass outcrops.
+	for i in 34:
+		var x := _rng.randf_range(-28.0, 28.0)
+		var z := _rng.randf_range(-211.0, -161.0)
+		if Vector2(x + 4.0, z + 199.0).length() < 14.5:
+			continue
+		if absf(x + 4.0) < 3.4:
+			continue
+		var shard := _mesh(root, "prism", Vector3(x, _rng.randf_range(0.4, 1.5), z), Vector3(_rng.randf_range(0.35, 0.8), _rng.randf_range(1.0, 3.4), _rng.randf_range(0.3, 0.7)), obsidian if i % 3 != 0 else obsidian_light)
+		shard.rotation.y = _rng.randf() * TAU
+		shard.rotation.z = _rng.randf_range(-0.28, 0.28)
+		if _rng.randf() < 0.28:
+			_mesh(root, "box", Vector3(x, 0.5, z + 0.1), Vector3(0.05, 0.7, 0.03), ember)
+	# Ash dunes and cracked basins between the shards.
+	for i in 12:
+		var x := _rng.randf_range(-26.0, 26.0)
+		var z := _rng.randf_range(-208.0, -164.0)
+		if Vector2(x + 4.0, z + 199.0).length() < 14.0 or absf(x + 4.0) < 3.2:
+			continue
+		var radius := _rng.randf_range(2.4, 4.8)
+		_mesh(root, "cylinder", Vector3(x, 0.015, z), Vector3(radius, radius + 0.8, 0.035), ash)
+		for j in 3:
+			var angle := _rng.randf() * TAU
+			var crack := _mesh(root, "box", Vector3(x + cos(angle) * radius * 0.5, 0.045, z + sin(angle) * radius * 0.5), Vector3(0.12, 0.02, _rng.randf_range(0.8, 2.0)), ember_deep)
+			crack.rotation.y = angle
+
+	# A toppled colossus: broken legs, a fallen torso and a crowned head.
+	var fallen := Vector3(15.0, 0.0, -172.0)
+	_mesh(root, "box", fallen + Vector3(-1.6, 0.35, 0.0), Vector3(1.1, 0.7, 1.4), obsidian)
+	_mesh(root, "box", fallen + Vector3(1.9, 0.55, 0.4), Vector3(1.2, 0.9, 1.3), obsidian_light).rotation.y = 0.4
+	var torso := _mesh(root, "cylinder", fallen + Vector3(0.2, 0.85, 0.1), Vector3(0.85, 1.15, 3.2), obsidian)
+	torso.rotation.z = PI * 0.5 + 0.16
+	torso.rotation.y = -0.5
+	for i in 3:
+		_mesh(root, "box", fallen + Vector3(-0.5 + 1.1 * float(i), 1.1, -0.55), Vector3(0.16, 0.16, 1.4), ember_deep).rotation.y = 0.35
+	var head := _mesh(root, "sphere", fallen + Vector3(2.9, 0.85, 0.4), Vector3(0.7, 0.6, 0.65), obsidian_light)
+	head.rotation.y = 0.8
+	for i in 4:
+		var angle := (float(i) - 1.5) * 0.4
+		var spike := _mesh(root, "prism", fallen + Vector3(2.9 + sin(angle) * 0.35, 1.35, 0.4 - cos(angle) * 0.2), Vector3(0.12, 0.5, 0.12), crown_gold)
+		spike.rotation.z = sin(angle) * 0.5
+	_mesh(root, "sphere", fallen + Vector3(2.95, 0.95, 0.15), Vector3(0.08, 0.08, 0.05), ember)
+
+	# Rib arches: the picked ribs of something older than the barrows.
+	for arch_spot in [Vector3(-19.0, 0.0, -177.0), Vector3(9.0, 0.0, -188.0), Vector3(-21.0, 0.0, -203.0)]:
+		var arch_base: Vector3 = arch_spot
+		for side in [-1, 1]:
+			for i in 4:
+				var t := float(i) / 3.0
+				var rib := _mesh(root, "cylinder", arch_base + Vector3(3.4 * float(side) * (1.0 - t * 0.55), 0.55 + t * 2.4, 0.0), Vector3(0.16 - t * 0.03, 0.3 - t * 0.04, 1.5 - t * 0.35), bone)
+				rib.rotation.z = -1.05 * float(side) * (1.0 - t * 0.45)
+			var leg := _mesh(root, "cylinder", arch_base + Vector3(3.5 * float(side), 1.1, 0.0), Vector3(0.3, 0.5, 2.2), bone)
+			leg.rotation.z = 0.12 * float(side)
+		_mesh(root, "sphere", arch_base + Vector3(0.0, 2.9, 0.0), Vector3(0.18, 0.16, 0.18), bone)
+
+	# Ember vents and rivers of slow fire.
+	for vent_spot in [Vector3(-12.0, 0.0, -167.0), Vector3(18.0, 0.0, -181.0), Vector3(-24.0, 0.0, -194.0), Vector3(11.0, 0.0, -207.0)]:
+		var vent: Vector3 = vent_spot
+		var cone := _mesh(root, "prism", vent + Vector3(0.0, 0.45, 0.0), Vector3(1.1, 1.0, 1.0), basalt)
+		cone.rotation.x = PI
+		_mesh(root, "sphere", vent + Vector3(0.0, 0.95, 0.0), Vector3(0.24, 0.16, 0.24), ember)
+		_chimney_smoke(root, vent + Vector3(0.0, 1.2, 0.0))
+		var light := OmniLight3D.new()
+		light.light_color = Color(1.0, 0.42, 0.14)
+		light.light_energy = 1.0
+		light.omni_range = 5.5
+		light.position = vent + Vector3(0.0, 1.3, 0.0)
+		root.add_child(light)
+
+	# The Sovereign's arena: a ring of black spires around a cracked crown disc,
+	# with a throne of fused swords at the far side.
+	var arena := Vector3(-4.0, 0.0, -199.0)
+	_mesh(root, "cylinder", arena + Vector3(0.0, 0.03, 0.0), Vector3(12.2, 13.2, 0.07), basalt)
+	_mesh(root, "cylinder", arena + Vector3(0.0, 0.06, 0.0), Vector3(9.4, 10.2, 0.05), _mat(Color(0.12, 0.11, 0.12), 1.0))
+	for i in 12:
+		var angle := float(i) * TAU / 12.0
+		var spot := arena + Vector3(cos(angle) * 10.8, 0.0, sin(angle) * 10.8)
+		var spire := _mesh(root, "prism", spot + Vector3(0.0, 2.6, 0.0), Vector3(0.75, 5.2, 0.65), obsidian)
+		spire.rotation.y = -angle
+		spire.rotation.z = cos(angle) * 0.1
+		_mesh(root, "box", spot + Vector3(0.0, 2.7, 0.34), Vector3(0.13, 1.8, 0.04), ember)
+		_mesh(root, "prism", spot + Vector3(0.0, 5.4, 0.0), Vector3(0.3, 0.6, 0.3), crown_gold)
+	for i in 4:
+		var angle := float(i) * TAU / 4.0 + 0.35
+		var brazier := arena + Vector3(cos(angle) * 7.4, 0.0, sin(angle) * 7.4)
+		_mesh(root, "cylinder", brazier + Vector3(0.0, 0.55, 0.0), Vector3(0.2, 0.16, 1.1), charred)
+		_mesh(root, "cylinder", brazier + Vector3(0.0, 1.2, 0.0), Vector3(0.36, 0.24, 0.26), basalt_light)
+		_mesh(root, "sphere", brazier + Vector3(0.0, 1.36, 0.0), Vector3(0.26, 0.18, 0.26), ember)
+		var flame_light := OmniLight3D.new()
+		flame_light.light_color = Color(1.0, 0.45, 0.16)
+		flame_light.light_energy = 1.15
+		flame_light.omni_range = 5.0
+		flame_light.position = brazier + Vector3(0.0, 1.7, 0.0)
+		root.add_child(flame_light)
+	# The throne: a fused fan of blades and a high obsidian back.
+	var throne := arena + Vector3(0.0, 0.0, -6.6)
+	_mesh(root, "box", throne + Vector3(0.0, 0.35, 0.0), Vector3(4.4, 0.7, 2.6), obsidian)
+	_mesh(root, "box", throne + Vector3(0.0, 2.3, 1.0), Vector3(4.0, 4.2, 0.55), obsidian_light).rotation.x = -0.12
+	for side in [-1, 1]:
+		_mesh(root, "box", throne + Vector3(2.25 * float(side), 1.5, 0.0), Vector3(0.35, 2.6, 1.3), obsidian)
+	for i in 9:
+		var angle := (float(i) - 4.0) * 0.19
+		var blade := _mesh(root, "box", throne + Vector3(sin(angle) * 1.7, 1.1 + cos(angle) * 0.9, -0.2), Vector3(0.09, 2.2, 0.22), crown_gold)
+		blade.rotation.z = -angle * 0.6
+		blade.rotation.x = -0.2
+	_mesh(root, "sphere", throne + Vector3(0.0, 3.5, 0.7), Vector3(0.42, 0.36, 0.3), ember)
+	for i in 18:
+		var angle := _rng.randf() * TAU
+		var ring_r := _rng.randf_range(4.0, 9.5)
+		var bone_spot := arena + Vector3(cos(angle) * ring_r, 0.09, sin(angle) * ring_r)
+		var bone_bar := _mesh(root, "box", bone_spot, Vector3(0.06, 0.06, _rng.randf_range(0.4, 1.0)), bone)
+		bone_bar.rotation.y = _rng.randf() * TAU
+	_firefly_swarm(root, arena + Vector3(0.0, 1.3, 0.0), 12, 7.0, Color(1.0, 0.48, 0.18))
+	_firefly_swarm(root, Vector3(-17.0, 1.0, -182.0), 8, 6.0, Color(0.85, 0.42, 1.0))
+
+	# Horizon-side spires so the far end of the land reads as a skyline, not a
+	# wall of nothing.
+	for side in [-1, 1]:
+		for i in 7:
+			var z := -164.0 - float(i) * 7.4
+			var x := 29.0 * float(side) + _rng.randf_range(-1.5, 1.5)
+			var spire := _mesh(root, "prism", Vector3(x, _rng.randf_range(2.0, 4.0), z), Vector3(_rng.randf_range(1.0, 2.0), _rng.randf_range(6.0, 12.0), _rng.randf_range(1.0, 1.8)), obsidian)
+			spire.rotation.y = _rng.randf() * TAU
+			spire.rotation.z = _rng.randf_range(-0.1, 0.1)
+
 # ---------------------------------------------------------------------------
 # Zone partitions: each land south of the town keeps its own border wall, so
 # crossing from meadow to clearing to barrows always feels like stepping
@@ -820,6 +1049,43 @@ func _build_zone_partitions() -> void:
 	var root := _group("ZonePartitions")
 	_build_thorn_partition(root)
 	_build_barrows_palissade(root)
+	_build_crown_partition(root)
+
+## A solid square pylon with its own collider, used to finish wall runs at map
+## edges, gateways and corners so no wall simply stops in mid-air.
+func _wall_post(parent: Node3D, position: Vector3, height: float, width: float, material: StandardMaterial3D, cap_material: StandardMaterial3D, yaw := 0.0) -> void:
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 1
+	body.position = position
+	body.rotation.y = yaw
+	parent.add_child(body)
+	_mesh(body, "box", Vector3(0.0, height * 0.5, 0.0), Vector3(width, height, width), material)
+	_mesh(body, "box", Vector3(0.0, height + 0.09, 0.0), Vector3(width + 0.3, 0.18, width + 0.3), cap_material)
+	_mesh(body, "box", Vector3(0.0, 0.16, 0.0), Vector3(width + 0.24, 0.32, width + 0.24), cap_material)
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(width, height, width)
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	collision.position = Vector3(0.0, height * 0.5, 0.0)
+	body.add_child(collision)
+
+## A free-standing gate jamb that actually stops the hero, for thresholds where
+## the road passes between two decorative posts.
+func _gate_jamb(parent: Node3D, position: Vector3, size: Vector3, material: StandardMaterial3D, cap_material: StandardMaterial3D) -> void:
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 1
+	body.position = position
+	parent.add_child(body)
+	_mesh(body, "box", Vector3(0.0, size.y * 0.5, 0.0), size, material)
+	_mesh(body, "box", Vector3(0.0, size.y + 0.12, 0.0), Vector3(size.x + 0.34, 0.24, size.z + 0.34), cap_material)
+	var shape := BoxShape3D.new()
+	shape.size = size
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	collision.position = Vector3(0.0, size.y * 0.5, 0.0)
+	body.add_child(collision)
 
 ## A solid charred timber wall with its own collider — like _make_wall but with
 ## a scorched cap instead of moss, since nothing green grows in the barrows.
@@ -869,9 +1135,7 @@ func _build_thorn_partition(root: Node3D) -> void:
 	var stone_dark := _mat(Color(0.28, 0.27, 0.24), 1.0)
 	var arch := Vector3(-4.0, 0.0, wall_z)
 	for side in [-1, 1]:
-		var post := _mesh(root, "box", arch + Vector3(3.4 * float(side), 2.0, 0.0), Vector3(1.0, 4.0, 1.2), stone)
-		post.rotation.z = -0.03 * float(side)
-		_mesh(root, "box", arch + Vector3(3.4 * float(side), 4.15, 0.0), Vector3(1.3, 0.35, 1.5), stone_dark)
+		_gate_jamb(root, arch + Vector3(3.4 * float(side), 0.0, 0.0), Vector3(1.0, 4.0, 1.2), stone, stone_dark)
 		var lantern := _mesh(root, "cylinder", arch + Vector3(3.4 * float(side), 3.2, 0.85), Vector3(0.05, 0.06, 0.9), _mat(Color(0.24, 0.18, 0.1), 0.95))
 		lantern.rotation.x = 0.5
 		var flame := _mesh(root, "sphere", arch + Vector3(3.4 * float(side), 3.35, 1.15), Vector3(0.14, 0.2, 0.14), _mat(Color(1.0, 0.66, 0.25), 0.3, 0.0, 2.0))
@@ -882,6 +1146,12 @@ func _build_thorn_partition(root: Node3D) -> void:
 		light.omni_range = 5.5
 		light.position = arch + Vector3(3.4 * float(side), 3.5, 1.2)
 		root.add_child(light)
+	# Stone end-posts tie the hedge into the map edge instead of leaving a cut.
+	for side in [-1, 1]:
+		_wall_post(root, Vector3(30.4 * float(side), 0.0, wall_z), 3.6, 1.25, stone, stone_dark, PI * 0.25)
+	# Briar buttresses break up the long hedge run and hide its seams.
+	for x in [-27.0, -20.0, -12.0, 9.0, 17.0, 24.0]:
+		_wall_post(root, Vector3(x, 0.0, wall_z), 3.05, 0.95, hedge, hedge_light, _rng.randf_range(-0.1, 0.1))
 	var lintel := _mesh(root, "box", arch + Vector3(0.0, 4.35, 0.0), Vector3(8.0, 0.55, 1.3), stone_dark)
 	lintel.rotation.z = 0.02
 	_mesh(root, "box", arch + Vector3(0.0, 4.8, 0.0), Vector3(4.4, 0.8, 0.4), _mat(Color(0.44, 0.42, 0.36), 0.95))
@@ -896,8 +1166,9 @@ func _build_barrows_palissade(root: Node3D) -> void:
 	var bone := _mat(Color(0.68, 0.64, 0.56), 0.95)
 	var ember := _mat(Color(0.95, 0.42, 0.12), 0.3, 0.0, 2.0)
 	var wall_z := -111.0
-	# Stake wall segments from the gateposts out to the side walls.
-	for segment in [[-31.0, -8.4], [0.4, 31.0]]:
+	# Stake wall segments run from the gateposts out to the side walls, so the
+	# whole threshold reads as one continuous barrier.
+	for segment in [[-30.4, -7.4], [-0.6, 30.4]]:
 		var span: Array = segment
 		var center_x := (float(span[0]) + float(span[1])) * 0.5
 		var length := absf(float(span[1]) - float(span[0]))
@@ -931,6 +1202,86 @@ func _build_barrows_palissade(root: Node3D) -> void:
 			light.omni_range = 5.0
 			light.position = Vector3(cresset_x, 2.1, wall_z - 1.0)
 			root.add_child(light)
+	# Solid gate jambs under the burning gateposts, and capping posts at the
+	# map edge so the stake wall has real corners.
+	for side in [-1, 1]:
+		_gate_jamb(root, Vector3(-4.0 + 3.4 * float(side), 0.0, wall_z), Vector3(0.85, 3.4, 0.85), charred, charred_light)
+		_wall_post(root, Vector3(30.5 * float(side), 0.0, wall_z), 3.7, 1.1, charred, charred_light, PI * 0.25)
+	# Bone charms strung beneath the gate lintel.
+	for i in 5:
+		_mesh(root, "box", Vector3(-4.0 + float(i - 2) * 0.55, 3.25 - float(i % 2) * 0.16, wall_z + 0.48), Vector3(0.06, 0.34, 0.04), bone)
+	# A final row of grave stakes that leans out from the wall's foot.
+	for i in 12:
+		var x := -28.0 + float(i) * 5.0
+		if absf(x + 4.0) < 4.6:
+			continue
+		var stake := _mesh(root, "prism", Vector3(x, 0.5, wall_z + 0.65), Vector3(0.2, _rng.randf_range(0.6, 1.1), 0.18), charred_light)
+		stake.rotation.x = -0.22
+
+## The threshold of the Hollow Crown at z = -157: a wall of black glass crowned
+## with ember-lit spikes, broken only by the road gate. This replaces the old
+## invisible far boundary, so the third land begins at a real doorway.
+func _build_crown_partition(root: Node3D) -> void:
+	var obsidian := _mat(Color(0.075, 0.07, 0.095), 0.78, 0.22)
+	var obsidian_light := _mat(Color(0.15, 0.14, 0.18), 0.72, 0.18)
+	var ember := _mat(Color(1.0, 0.44, 0.13), 0.55, 0.0, 2.2)
+	var ember_deep := _mat(Color(0.8, 0.25, 0.07), 0.7, 0.0, 1.2)
+	var crown_gold := _mat(Color(1.0, 0.7, 0.28), 0.4, 0.75, 1.0)
+	var bone := _mat(Color(0.7, 0.66, 0.58), 0.95)
+	var wall_z := HOLLOW_CROWN_THRESHOLD
+	for span in [[-30.4, -7.6], [-0.4, 30.4]]:
+		var pair: Array = span
+		var center_x := (float(pair[0]) + float(pair[1])) * 0.5
+		var length := absf(float(pair[1]) - float(pair[0]))
+		_charred_wall(root, Vector3(center_x, 1.8, wall_z), Vector3(length, 3.6, 0.95), obsidian, obsidian_light)
+		_mesh(root, "box", Vector3(center_x, 3.1, wall_z), Vector3(length + 0.4, 0.26, 1.15), obsidian_light)
+		# A crown of black-glass spikes along the whole run.
+		var count := int(length / 1.9)
+		for i in count:
+			var x := float(pair[0]) + 0.9 + float(i) * 1.9
+			var height := 0.5 + 0.28 * float((i * 7) % 3)
+			var spike := _mesh(root, "prism", Vector3(x, 3.75 + height * 0.5, wall_z), Vector3(0.42, height, 0.4), obsidian)
+			spike.rotation.y = _rng.randf_range(-0.15, 0.15)
+			if i % 2 == 0:
+				_mesh(root, "box", Vector3(x, 3.8, wall_z + 0.2), Vector3(0.07, 0.5, 0.03), ember_deep)
+		# Ember sconces every few paces.
+		for i in 4:
+			var x := float(pair[0]) + (float(length) / 4.0) * (float(i) + 0.5)
+			_mesh(root, "cylinder", Vector3(x, 1.15, wall_z + 0.7), Vector3(0.06, 0.08, 0.8), obsidian_light)
+			_mesh(root, "sphere", Vector3(x, 1.62, wall_z + 0.7), Vector3(0.16, 0.12, 0.16), ember)
+			var light := OmniLight3D.new()
+			light.light_color = Color(1.0, 0.45, 0.16)
+			light.light_energy = 0.9
+			light.omni_range = 4.6
+			light.position = Vector3(x, 1.8, wall_z + 0.7)
+			root.add_child(light)
+	# Gate: two tall black jambs, a crown lintel, and a real collider either side.
+	var gate := Vector3(-4.0, 0.0, wall_z)
+	for side in [-1, 1]:
+		_gate_jamb(root, gate + Vector3(3.6 * float(side), 0.0, 0.0), Vector3(1.0, 5.6, 1.3), obsidian, obsidian_light)
+		_mesh(root, "prism", gate + Vector3(3.6 * float(side), 6.05, 0.0), Vector3(0.5, 1.1, 0.5), crown_gold)
+		var brazier := _mesh(root, "cylinder", gate + Vector3(3.6 * float(side), 1.5, 1.6), Vector3(0.3, 0.22, 0.7), obsidian_light)
+		brazier.rotation.x = PI * 0.5
+		_mesh(root, "sphere", gate + Vector3(3.6 * float(side), 1.95, 1.6), Vector3(0.24, 0.16, 0.24), ember)
+		var light := OmniLight3D.new()
+		light.light_color = Color(1.0, 0.5, 0.18)
+		light.light_energy = 1.25
+		light.omni_range = 6.0
+		light.position = gate + Vector3(3.6 * float(side), 2.2, 1.6)
+		root.add_child(light)
+	var lintel := _mesh(root, "box", gate + Vector3(0.0, 5.75, 0.0), Vector3(8.4, 0.6, 1.5), obsidian)
+	lintel.rotation.z = 0.015
+	_mesh(root, "box", gate + Vector3(0.0, 6.2, 0.0), Vector3(4.6, 0.8, 0.5), obsidian_light)
+	for i in 5:
+		var angle := (float(i) - 2.0) * 0.28
+		var crest := _mesh(root, "prism", gate + Vector3(sin(angle) * 1.9, 6.75 + cos(angle) * 0.45, 0.0), Vector3(0.2, 0.7 + 0.22 * float(2 - absi(i - 2)), 0.2), crown_gold)
+		crest.rotation.z = -angle * 0.5
+	# Bone wind-chimes and the warning sign.
+	for i in 7:
+		_mesh(root, "box", gate + Vector3(-2.4 + float(i) * 0.8, 5.28 - float(i % 3) * 0.12, 0.5), Vector3(0.05, 0.4, 0.04), bone)
+	_signpost(root, "THE HOLLOW CROWN", Vector3(-1.4, 0.0, wall_z + 3.2), 0.36)
+	for side in [-1, 1]:
+		_wall_post(root, Vector3(30.5 * float(side), 0.0, wall_z), 4.0, 1.2, obsidian, obsidian_light, PI * 0.25)
 
 # ---------------------------------------------------------------------------
 # Zone detail pass: a few props that belong to exactly one land — a scarecrow
@@ -949,8 +1300,9 @@ func _build_barrows_palissade(root: Node3D) -> void:
 func _build_horizon() -> void:
 	var root := _group("Horizon")
 	var grass := _mat(Color(0.19, 0.25, 0.15), 1.0)
-	# The land continues past the walls: one wide ground sheet under everything.
-	_mesh(root, "box", Vector3(0.0, -0.08, -8.0), Vector3(220.0, 0.1, 320.0), grass)
+	# The land continues past the walls: one wide ground sheet under everything,
+	# stretched south to carry the eye beyond the Hollow Crown's far edge.
+	_mesh(root, "box", Vector3(0.0, -0.08, -42.0), Vector3(220.0, 0.1, 390.0), grass)
 	_build_horizon_woods(root)
 	_build_horizon_hills(root)
 	_build_horizon_mountains(root)
@@ -980,9 +1332,11 @@ func _build_horizon_woods(root: Node3D) -> void:
 	# kept clear north of the town gate so the way out reads as "the road goes
 	# on" rather than "the trees begin here".
 	var spots: Array[Vector3] = []
-	spots.append_array(_horizon_band(_rng, 34, -104.0, -38.0, -157.0, 41.0))
-	spots.append_array(_horizon_band(_rng, 34, 38.0, 104.0, -157.0, 41.0))
-	spots.append_array(_horizon_band(_rng, 26, -104.0, 104.0, 46.0, 148.0))
+	spots.append_array(_horizon_band(_rng, 40, -104.0, -38.0, -215.0, 41.0))
+	spots.append_array(_horizon_band(_rng, 40, 38.0, 104.0, -215.0, 41.0))
+	spots.append_array(_horizon_band(_rng, 32, -104.0, 104.0, 46.0, 148.0))
+	# A dark southern tree line closes the world beyond the crown gate.
+	spots.append_array(_horizon_band(_rng, 20, -96.0, 96.0, -252.0, -220.0))
 	for spot in spots:
 		if spot.z > 40.0 and spot.z < 84.0 and absf(spot.x) < 4.5:
 			continue
@@ -1000,9 +1354,10 @@ func _build_horizon_hills(root: Node3D) -> void:
 	var hill := _mat(Color(0.21, 0.27, 0.17), 1.0)
 	var hill_dark := _mat(Color(0.17, 0.22, 0.14), 1.0)
 	var spots: Array[Vector3] = []
-	spots.append_array(_horizon_band(_rng, 7, -100.0, -52.0, -140.0, 30.0))
-	spots.append_array(_horizon_band(_rng, 7, 52.0, 100.0, -140.0, 30.0))
+	spots.append_array(_horizon_band(_rng, 9, -100.0, -52.0, -205.0, 30.0))
+	spots.append_array(_horizon_band(_rng, 9, 52.0, 100.0, -205.0, 30.0))
 	spots.append_array(_horizon_band(_rng, 5, -90.0, 90.0, 96.0, 142.0))
+	spots.append_array(_horizon_band(_rng, 4, -76.0, 76.0, -248.0, -224.0))
 	for spot in spots:
 		if _horizon_clear_of_landmark(spot):
 			continue
@@ -1866,12 +2221,15 @@ func _rock(parent: Node3D, position: Vector3, scale: float, material: StandardMa
 func _build_boundaries() -> void:
 	var root := _group("Boundaries")
 	var hidden := _mat(Color(0.2, 0.2, 0.2), 1.0)
-	# The Reach now runs on into the Ashen Barrows, so the side walls stretch
-	# south and the far wall moves to the barrows' cold edge.
-	_make_wall(root, Vector3(-31.0, 2.5, -58.0), Vector3(1.0, 5.0, 198.0), hidden, false)
-	_make_wall(root, Vector3(31.0, 2.5, -58.0), Vector3(1.0, 5.0, 198.0), hidden, false)
+	# The playable Reach now runs from the north road (z = 41) all the way past
+	# the barrows to the Hollow Crown's far edge (z = -215). The old invisible
+	# wall at z = -157 is gone: the crown-gate partition is the real threshold.
+	var reach_length := 41.0 - HOLLOW_CROWN_FAR_EDGE
+	var reach_center := (41.0 + HOLLOW_CROWN_FAR_EDGE) * 0.5
+	_make_wall(root, Vector3(-31.0, 2.5, reach_center), Vector3(1.0, 5.0, reach_length), hidden, false)
+	_make_wall(root, Vector3(31.0, 2.5, reach_center), Vector3(1.0, 5.0, reach_length), hidden, false)
 	_make_wall(root, Vector3(0.0, 2.5, 41.0), Vector3(62.0, 5.0, 1.0), hidden, false)
-	_make_wall(root, Vector3(0.0, 2.5, -157.0), Vector3(62.0, 5.0, 1.0), hidden, false)
+	_make_wall(root, Vector3(0.0, 2.5, HOLLOW_CROWN_FAR_EDGE), Vector3(62.0, 5.0, 1.0), hidden, false)
 
 # ---------------------------------------------------------------------------
 # Shared props

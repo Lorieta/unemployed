@@ -56,10 +56,10 @@ shader_parameter/pattern_fade_end = 60.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
 material = SubResource("ShaderMaterial_ground")
-size = Vector2(220, 320)
+size = Vector2(220, 480)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
-size = Vector3(240, 1.2, 320)
+size = Vector3(240, 1.2, 480)
 
 [node name="VerdantReach" type="Node3D" unique_id=871306641]
 
@@ -522,6 +522,114 @@ attack_range = 3.6
 attack_interval = 2.3
 xp_reward = 1500.0
 gold_reward = 500
+boss = true
+dormant = true
+boss_respawns = true
+boss_respawn_delay = 300.0
+
+[node name="ObsidianStalker1" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, -166)
+variant = "obsidian_stalker"
+display_name = "Obsidian Stalker"
+max_health = 520.0
+damage = 26.0
+move_speed = 4.6
+aggro_range = 18.0
+attack_range = 2.8
+attack_interval = 1.5
+xp_reward = 190.0
+gold_reward = 18
+
+[node name="ObsidianStalker2" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -176)
+variant = "obsidian_stalker"
+display_name = "Obsidian Stalker"
+max_health = 520.0
+damage = 26.0
+move_speed = 4.6
+aggro_range = 18.0
+attack_range = 2.8
+attack_interval = 1.5
+xp_reward = 190.0
+gold_reward = 18
+
+[node name="ObsidianStalker3" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0, -188)
+variant = "obsidian_stalker"
+display_name = "Obsidian Stalker"
+max_health = 520.0
+damage = 26.0
+move_speed = 4.6
+aggro_range = 18.0
+attack_range = 2.8
+attack_interval = 1.5
+xp_reward = 190.0
+gold_reward = 18
+
+[node name="HollowAcolyte1" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -164)
+variant = "hollow_acolyte"
+display_name = "Hollow Acolyte"
+max_health = 430.0
+damage = 28.0
+move_speed = 2.1
+aggro_range = 20.0
+attack_range = 12.0
+attack_interval = 2.5
+xp_reward = 210.0
+gold_reward = 20
+
+[node name="HollowAcolyte2" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -196)
+variant = "hollow_acolyte"
+display_name = "Hollow Acolyte"
+max_health = 430.0
+damage = 28.0
+move_speed = 2.1
+aggro_range = 20.0
+attack_range = 12.0
+attack_interval = 2.5
+xp_reward = 210.0
+gold_reward = 20
+
+[node name="CinderColossus1" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -205)
+variant = "cinder_colossus"
+display_name = "Cinder Colossus"
+max_health = 1000.0
+damage = 38.0
+move_speed = 2.2
+aggro_range = 19.0
+attack_range = 4.2
+attack_interval = 2.5
+xp_reward = 340.0
+gold_reward = 34
+
+[node name="CinderColossus2" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26, 0, -171)
+variant = "cinder_colossus"
+display_name = "Cinder Colossus"
+max_health = 1000.0
+damage = 38.0
+move_speed = 2.2
+aggro_range = 19.0
+attack_range = 4.2
+attack_interval = 2.5
+xp_reward = 340.0
+gold_reward = 34
+
+[node name="AshenSovereign" parent="Monsters" instance=ExtResource("9_monster")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -199)
+variant = "ashen_sovereign"
+display_name = "The Ashen Sovereign"
+max_health = 4800.0
+damage = 44.0
+move_speed = 3.1
+aggro_range = 30.0
+attack_range = 4.2
+attack_interval = 2.2
+xp_reward = 2800.0
+gold_reward = 900
 boss = true
 dormant = true
 boss_respawns = true

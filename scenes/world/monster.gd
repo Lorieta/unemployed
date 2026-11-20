@@ -1,10 +1,11 @@
 extends CharacterBody3D
 
-## One script, four silhouettes. Mosslings, briar wolves and foxfire wisps prowl
-## the Thorned Field; the Briar Warden is the named elite that wakes when the
-## shrine is lit. Every variant shares the same aggro, strike, health-bar, loot
-## and respawn code, so the field behaves consistently even though it looks
-## varied.
+## One script, many silhouettes. Mosslings, briar wolves and foxfire wisps prowl
+## the Thorned Field; the Briar Warden wakes when the shrine is lit; the barrows
+## keep ember hounds, cinder imps and grave-frost dead; and the Hollow Crown adds
+## obsidian stalkers, hollow acolytes, cinder colossi and their Sovereign. Every
+## variant shares the same aggro, strike, health-bar, loot and respawn code, so
+## the field behaves consistently even though it looks varied.
 
 signal defeated(monster: Node)
 
@@ -34,6 +35,10 @@ const VARIANT_THEME := {
 	"ash_revenant": {"arc": Color(1.0, 0.55, 0.25, 0.85), "ring": Color(1.0, 0.4, 0.15, 0.9), "bolt": Color(1.0, 0.65, 0.3, 1.0), "bolt_glow": Color(1.0, 0.5, 0.2, 1.0)},
 	"frost_wraith": {"arc": Color(0.55, 0.9, 1.0, 0.85), "ring": Color(0.6, 0.95, 1.0, 0.9), "bolt": Color(0.75, 0.95, 1.0, 1.0), "bolt_glow": Color(0.6, 0.9, 1.0, 1.0)},
 	"ember_tyrant": {"arc": Color(1.0, 0.45, 0.16, 0.9), "ring": Color(1.0, 0.32, 0.1, 0.95), "bolt": Color(1.0, 0.62, 0.25, 1.0), "bolt_glow": Color(1.0, 0.45, 0.15, 1.0)},
+	"obsidian_stalker": {"arc": Color(1.0, 0.36, 0.12, 0.9), "ring": Color(1.0, 0.28, 0.08, 0.95), "bolt": Color(1.0, 0.55, 0.22, 1.0), "bolt_glow": Color(1.0, 0.35, 0.12, 1.0)},
+	"hollow_acolyte": {"arc": Color(0.72, 0.55, 1.0, 0.85), "bolt": Color(0.86, 0.66, 1.0, 1.0), "bolt_glow": Color(0.64, 0.42, 1.0, 1.0)},
+	"cinder_colossus": {"arc": Color(1.0, 0.42, 0.12, 0.95), "ring": Color(1.0, 0.28, 0.06, 0.95), "bolt": Color(1.0, 0.58, 0.2, 1.0), "bolt_glow": Color(1.0, 0.34, 0.1, 1.0)},
+	"ashen_sovereign": {"arc": Color(1.0, 0.55, 0.18, 0.95), "ring": Color(1.0, 0.35, 0.08, 0.95), "bolt": Color(1.0, 0.72, 0.3, 1.0), "bolt_glow": Color(1.0, 0.48, 0.15, 1.0)},
 }
 
 func _theme(key: String, fallback: Color) -> Color:
@@ -119,7 +124,7 @@ func _ready() -> void:
 	_spawn_rotation = rotation.y
 	_start_dormant = dormant
 	health = max_health
-	_wisp = variant == "wisp" or variant == "cinder_imp"
+	_wisp = variant == "wisp" or variant == "cinder_imp" or variant == "hollow_acolyte"
 	_collision = get_node_or_null("CollisionShape3D") as CollisionShape3D
 	_visual = Node3D.new()
 	_visual.name = "Visual"
@@ -158,6 +163,14 @@ func _build_visual() -> void:
 			_build_barrow_wight()
 		"ember_tyrant":
 			_build_barrow_king()
+		"obsidian_stalker":
+			_build_obsidian_stalker()
+		"hollow_acolyte":
+			_build_hollow_acolyte()
+		"cinder_colossus":
+			_build_cinder_colossus()
+		"ashen_sovereign":
+			_build_ashen_sovereign()
 		_:
 			_build_mossling()
 
@@ -493,6 +506,249 @@ func _build_barrow_king() -> void:
 	light.position = Vector3(0.0, 2.4, -0.3)
 	_visual.add_child(light)
 
+## Obsidian Stalker: a swift, low-slung hunter of black glass, its forelimbs
+## ending in long blades and its spine split by seams of ember light.
+func _build_obsidian_stalker() -> void:
+	_height = 1.5
+	_radius = 0.58
+	var glass := Color(0.08, 0.075, 0.1)
+	var glass_light := Color(0.16, 0.14, 0.2)
+	var ember := Color(1.0, 0.4, 0.12)
+	var body := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 0.9, 0.12), glass, Vector3(0.32, 0.22, 0.34))
+	body.scale = Vector3(1.0, 0.82, 2.35)
+	var chest := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 0.94, -0.48), glass_light, Vector3(0.32, 0.28, 0.3))
+	chest.scale = Vector3(1.0, 0.95, 1.2)
+	_head = Node3D.new()
+	_head.position = Vector3(0.0, 1.12, -0.7)
+	_visual.add_child(_head)
+	var skull := _add_mesh(_head, "SphereMesh", Vector3(0.0, -0.04, -0.28), glass, Vector3(0.24, 0.19, 0.24))
+	skull.scale = Vector3(0.9, 0.85, 1.25)
+	_add_mesh(_head, "PrismMesh", Vector3(0.0, -0.13, -0.55), glass_light, Vector3(0.18, 0.16, 0.3))
+	_add_glow_eye(Vector3(-0.09, 0.02, -0.46), ember, _head)
+	_add_glow_eye(Vector3(0.09, 0.02, -0.46), ember, _head)
+	for side in [-1, 1]:
+		var horn := _add_mesh(_head, "PrismMesh", Vector3(0.14 * side, 0.18, -0.15), glass_light, Vector3(0.09, 0.42, 0.08))
+		horn.rotation.z = -0.45 * side
+		# Bladed forelimbs on shoulder pivots so the sweep reads as a lunge.
+		var shoulder := Node3D.new()
+		shoulder.position = Vector3(0.33 * side, 0.98, -0.34)
+		shoulder.set_meta("side", side)
+		shoulder.set_meta("rest_x", 0.08)
+		shoulder.set_meta("rest_z", 0.2 * side)
+		_visual.add_child(shoulder)
+		_arm_pivots.append(shoulder)
+		_add_mesh(shoulder, "CylinderMesh", Vector3(0.05 * side, -0.36, 0.0), glass, Vector3(0.09, 0.06, 0.9))
+		var blade := _add_mesh(shoulder, "PrismMesh", Vector3(0.12 * side, -0.82, -0.22), glass_light, Vector3(0.1, 0.86, 0.18))
+		blade.rotation.x = 0.55
+		blade.rotation.z = 0.12 * side
+		# Four legs, phased for a fast diagonal trot.
+		for front in [-1, 1]:
+			for s2 in [-1, 1]:
+				var hip := Node3D.new()
+				hip.position = Vector3(0.24 * s2, 0.8, 0.34 * front)
+				hip.set_meta("phase", 0.0 if float(front) * float(s2) > 0.0 else PI)
+				hip.set_meta("rest", 0.06 * float(front))
+				_visual.add_child(hip)
+				_legs.append(hip)
+				_add_mesh(hip, "CylinderMesh", Vector3(0.0, -0.38, 0.0), glass, Vector3(0.08, 0.06, 0.72))
+		# Glass shards jutting from the spine.
+		for i in 6:
+			var shard := _add_mesh(_visual, "PrismMesh", Vector3(0.0, 1.16 - float(i) * 0.02, -0.44 + float(i) * 0.2), glass_light if i % 2 == 0 else glass, Vector3(0.11, 0.3 + 0.06 * float(i % 3), 0.09))
+			shard.rotation.z = 0.12 * float(side)
+		# A long blade of a tail.
+		var tail := _add_mesh(_visual, "PrismMesh", Vector3(0.0, 1.08, 0.66), glass, Vector3(0.09, 0.11, 1.0))
+		tail.rotation.x = 0.34
+		_mesh_ember_seam(_visual, Vector3(0.0, 1.08, -0.1), Vector3(0.06, 0.04, 1.55), ember)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.42, 0.14)
+	light.light_energy = 0.55
+	light.omni_range = 2.8
+	light.position = Vector3(0.0, 1.05, -0.5)
+	_visual.add_child(light)
+
+## Hollow Acolyte: a gaunt, floating priest of the crown, its face hidden under
+## a torn hood and its staff crowned with a cinder star.
+func _build_hollow_acolyte() -> void:
+	_height = 2.15
+	_radius = 0.42
+	var robe := Color(0.15, 0.12, 0.19)
+	var robe_light := Color(0.24, 0.2, 0.3)
+	var bone := Color(0.72, 0.68, 0.62)
+	var violet := Color(0.72, 0.5, 1.0)
+	var ember := Color(1.0, 0.5, 0.18)
+	var skirt := _add_mesh(_visual, "CylinderMesh", Vector3(0.0, 0.82, 0.0), robe, Vector3(0.18, 0.46, 1.55))
+	skirt.scale = Vector3(1.0, 1.0, 0.86)
+	var chest := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 1.62, 0.0), robe_light, Vector3(0.28, 0.26, 0.24))
+	chest.scale = Vector3(1.0, 0.9, 0.74)
+	_head = Node3D.new()
+	_head.position = Vector3(0.0, 1.94, -0.02)
+	_visual.add_child(_head)
+	_add_mesh(_head, "SphereMesh", Vector3(0.0, 0.06, 0.0), bone, Vector3(0.14, 0.15, 0.14))
+	var hood := _add_mesh(_head, "PrismMesh", Vector3(0.0, 0.23, 0.04), robe, Vector3(0.38, 0.48, 0.33))
+	hood.rotation.x = 0.22
+	_add_glow_eye(Vector3(-0.055, 0.06, -0.13), violet, _head)
+	_add_glow_eye(Vector3(0.055, 0.06, -0.13), violet, _head)
+	# Cinder star at the staff's head.
+	var staff := _add_mesh(_visual, "CylinderMesh", Vector3(0.46, 1.15, 0.02), robe_light, Vector3(0.035, 0.05, 2.35))
+	staff.rotation.z = -0.08
+	var star := _add_mesh(_visual, "SphereMesh", Vector3(0.54, 2.36, 0.02), ember, Vector3(0.16, 0.16, 0.16), true)
+	_orb_meshes.append(star)
+	for i in 4:
+		var angle := float(i) * TAU / 4.0
+		var ray := _add_mesh(_visual, "PrismMesh", Vector3(0.54 + cos(angle) * 0.2, 2.36 + sin(angle) * 0.2, 0.02), ember, Vector3(0.06, 0.3, 0.06), true)
+		ray.rotation.z = -angle + PI * 0.5
+	for side in [-1, 1]:
+		var shoulder := Node3D.new()
+		shoulder.position = Vector3(0.3 * side, 1.62, 0.0)
+		shoulder.set_meta("side", side)
+		shoulder.set_meta("rest_x", 0.18)
+		shoulder.set_meta("rest_z", 0.5 * side)
+		_visual.add_child(shoulder)
+		_arm_pivots.append(shoulder)
+		_add_mesh(shoulder, "CylinderMesh", Vector3(0.03 * side, -0.3, 0.0), robe, Vector3(0.06, 0.04, 0.72))
+	# Tattered robe panels and a drift of violet grave-motes.
+	for i in 7:
+		var angle := float(i) * TAU / 7.0
+		var panel := _add_mesh(_visual, "PrismMesh", Vector3(cos(angle) * 0.3, 0.52 + sin(float(i) * 1.9) * 0.14, sin(angle) * 0.28), robe if i % 2 == 0 else robe_light, Vector3(0.18, 0.62, 0.07))
+		panel.rotation.y = angle
+	for i in 3:
+		var mote := _add_mesh(_visual, "SphereMesh", Vector3(cos(float(i) * 2.3) * 0.5, 1.2 + sin(float(i) * 1.7) * 0.3, sin(float(i) * 2.3) * 0.4), violet, Vector3(0.055, 0.055, 0.055), true)
+		mote.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.72, 0.5, 1.0)
+	light.light_energy = 0.85
+	light.omni_range = 3.2
+	light.position = Vector3(0.3, 1.8, 0.0)
+	_visual.add_child(light)
+
+## Cinder Colossus: a walking furnace of cracked basalt, all shoulders and fists.
+func _build_cinder_colossus() -> void:
+	_height = 3.0
+	_radius = 0.95
+	var basalt := Color(0.16, 0.13, 0.12)
+	var basalt_light := Color(0.27, 0.22, 0.19)
+	var ember := Color(1.0, 0.42, 0.12)
+	var body := _add_mesh(_visual, "CylinderMesh", Vector3(0.0, 1.55, 0.0), basalt, Vector3(0.66, 0.48, 1.9))
+	body.scale = Vector3(1.0, 1.0, 0.8)
+	var chest := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 2.28, -0.08), basalt_light, Vector3(0.62, 0.52, 0.5))
+	chest.scale = Vector3(1.0, 0.9, 0.78)
+	_head = Node3D.new()
+	_head.position = Vector3(0.0, 2.86, -0.08)
+	_visual.add_child(_head)
+	_add_mesh(_head, "BoxMesh", Vector3(0.0, 0.05, -0.14), basalt, Vector3(0.34, 0.28, 0.3))
+	_add_glow_eye(Vector3(-0.1, 0.06, -0.3), ember, _head)
+	_add_glow_eye(Vector3(0.1, 0.06, -0.3), ember, _head)
+	# A furnace mouth across the ribs.
+	_mesh_ember_seam(_visual, Vector3(0.0, 2.18, -0.53), Vector3(0.44, 0.08, 0.05), ember)
+	_mesh_ember_seam(_visual, Vector3(0.0, 1.75, -0.49), Vector3(0.34, 0.06, 0.05), ember)
+	for side in [-1, 1]:
+		var pauldron := _add_mesh(_visual, "SphereMesh", Vector3(0.72 * side, 2.46, 0.0), basalt_light, Vector3(0.32, 0.26, 0.3))
+		pauldron.scale = Vector3(1.0, 0.72, 1.0)
+		var shoulder := Node3D.new()
+		shoulder.position = Vector3(0.82 * side, 2.28, 0.0)
+		shoulder.set_meta("side", side)
+		shoulder.set_meta("rest_x", 0.14)
+		shoulder.set_meta("rest_z", 0.1 * side)
+		_visual.add_child(shoulder)
+		_arm_pivots.append(shoulder)
+		_add_mesh(shoulder, "CylinderMesh", Vector3(0.12 * side, -0.66, 0.0), basalt, Vector3(0.18, 0.12, 1.55))
+		var fist := _add_mesh(shoulder, "SphereMesh", Vector3(0.18 * side, -1.38, -0.1), basalt_light, Vector3(0.38, 0.32, 0.34))
+		fist.scale = Vector3(1.0, 0.9, 1.1)
+		for i in 3:
+			var knuckle := _add_mesh(fist, "PrismMesh", Vector3((float(i) - 1.0) * 0.16, 0.16, -0.26), ember, Vector3(0.06, 0.18, 0.06), true)
+			knuckle.rotation.x = 0.4
+		var hip := Node3D.new()
+		hip.position = Vector3(0.34 * side, 0.68, -0.04)
+		hip.set_meta("phase", 0.0 if side < 0 else PI)
+		hip.set_meta("rest", 0.0)
+		_visual.add_child(hip)
+		_legs.append(hip)
+		var foot := _add_mesh(hip, "CylinderMesh", Vector3(0.0, -0.42, 0.0), basalt, Vector3(0.26, 0.32, 0.52))
+		foot.scale = Vector3(1.0, 0.75, 1.2)
+	# Basalt growths and a crown of broken horns.
+	for i in 5:
+		var angle := (float(i) - 2.0) * 0.4
+		var horn := _add_mesh(_head, "PrismMesh", Vector3(sin(angle) * 0.18, 0.32, cos(angle) * 0.08), basalt_light, Vector3(0.1, 0.5 + 0.08 * float(2 - absi(i - 2)), 0.1))
+		horn.rotation.z = -angle * 0.35
+	for i in 6:
+		var angle := float(i) * TAU / 6.0
+		var shard := _add_mesh(_visual, "PrismMesh", Vector3(cos(angle) * 0.5, 1.1 + sin(float(i) * 1.4) * 0.2, sin(angle) * 0.44), basalt, Vector3(0.14, 0.42, 0.12))
+		shard.rotation.z = cos(angle) * 0.5
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.42, 0.14)
+	light.light_energy = 1.25
+	light.omni_range = 4.0
+	light.position = Vector3(0.0, 2.1, -0.5)
+	_visual.add_child(light)
+
+## Ashen Sovereign: the crowned lord of the Hollow Crown. Obsidian plate over a
+## furnace heart, a crown of black spires, and a cloak of ember-eaten banners.
+func _build_ashen_sovereign() -> void:
+	_height = 3.6
+	_radius = 0.95
+	var obsidian := Color(0.07, 0.065, 0.09)
+	var obsidian_light := Color(0.17, 0.15, 0.21)
+	var gold := Color(1.0, 0.68, 0.24)
+	var ember := Color(1.0, 0.44, 0.12)
+	var bone := Color(0.7, 0.67, 0.6)
+	var cloak := _add_mesh(_visual, "CylinderMesh", Vector3(0.0, 1.5, 0.08), obsidian, Vector3(0.25, 1.12, 2.8))
+	cloak.scale = Vector3(1.0, 1.0, 0.9)
+	var chest := _add_mesh(_visual, "SphereMesh", Vector3(0.0, 2.7, -0.06), obsidian_light, Vector3(0.54, 0.48, 0.45))
+	chest.scale = Vector3(1.0, 0.95, 0.78)
+	_mesh_ember_seam(_visual, Vector3(0.0, 2.62, -0.48), Vector3(0.34, 0.1, 0.06), ember)
+	_head = Node3D.new()
+	_head.position = Vector3(0.0, 3.02, -0.04)
+	_visual.add_child(_head)
+	_add_mesh(_head, "SphereMesh", Vector3(0.0, 0.12, 0.0), bone, Vector3(0.22, 0.2, 0.21))
+	_add_glow_eye(Vector3(-0.085, 0.12, -0.18), ember, _head)
+	_add_glow_eye(Vector3(0.085, 0.12, -0.18), ember, _head)
+	# The crown: five black-glass spikes tipped in gold.
+	for i in 7:
+		var angle := (float(i) - 3.0) * 0.32
+		var spike := _add_mesh(_head, "PrismMesh", Vector3(sin(angle) * 0.18, 0.37, -cos(angle) * 0.12 + 0.04), obsidian, Vector3(0.08, 0.36 + 0.1 * float(3 - absi(i - 3)), 0.08))
+		spike.rotation.z = -angle * 0.3
+		_add_mesh(spike, "PrismMesh", Vector3(0.0, 0.26, 0.0), gold, Vector3(0.055, 0.12, 0.055))
+	# Pauldrons, arms and fists.
+	for side in [-1, 1]:
+		var pauldron := _add_mesh(_visual, "SphereMesh", Vector3(0.72 * side, 2.88, 0.0), obsidian_light, Vector3(0.3, 0.24, 0.28))
+		pauldron.scale = Vector3(1.0, 0.72, 1.0)
+		for i in 3:
+			var spike := _add_mesh(pauldron, "PrismMesh", Vector3((float(i) - 1.0) * 0.16, 0.18, 0.0), gold, Vector3(0.06, 0.22, 0.06))
+			spike.rotation.z = (float(i) - 1.0) * 0.25
+		var shoulder := Node3D.new()
+		shoulder.position = Vector3(0.78 * side, 2.72, 0.0)
+		shoulder.set_meta("side", side)
+		shoulder.set_meta("rest_x", 0.12)
+		shoulder.set_meta("rest_z", 0.16 * side)
+		_visual.add_child(shoulder)
+		_arm_pivots.append(shoulder)
+		_add_mesh(shoulder, "CylinderMesh", Vector3(0.12 * side, -0.72, 0.0), obsidian, Vector3(0.16, 0.12, 1.6))
+		var claw := _add_mesh(shoulder, "PrismMesh", Vector3(0.18 * side, -1.58, -0.14), obsidian_light, Vector3(0.16, 0.7, 0.2))
+		claw.rotation.z = 3.05 * side
+		_mesh_ember_seam(shoulder, Vector3(0.12 * side, -0.72, -0.15), Vector3(0.05, 1.2, 0.05), ember)
+	# A cloak of banner-tatters and ember motes.
+	for i in 9:
+		var angle := float(i) * TAU / 9.0
+		var tatter := _add_mesh(_visual, "PrismMesh", Vector3(cos(angle) * 0.64, 0.72 + sin(float(i) * 2.2) * 0.22, sin(angle) * 0.55), obsidian if i % 2 == 0 else obsidian_light, Vector3(0.26, 1.0, 0.1))
+		tatter.rotation.y = angle
+		tatter.rotation.x = 0.15
+	for i in 4:
+		var angle := float(i) * TAU / 4.0 + 0.4
+		var mote := _add_mesh(_visual, "SphereMesh", Vector3(cos(angle) * 1.0, 1.0 + sin(float(i) * 1.8) * 0.4, sin(angle) * 0.9), ember, Vector3(0.075, 0.075, 0.075), true)
+		mote.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.45, 0.16)
+	light.light_energy = 1.1
+	light.omni_range = 5.4
+	light.position = Vector3(0.0, 2.7, -0.4)
+	_visual.add_child(light)
+
+## A thin emissive crack used by the Hollow Crown's stone-and-fire silhouettes.
+func _mesh_ember_seam(parent: Node3D, position: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
+	var seam := _add_mesh(parent, "BoxMesh", position, color, size, true)
+	seam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return seam
+
 func _add_mesh(parent: Node3D, mesh_type: String, position: Vector3, color: Color, size: Vector3, emissive := false) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	var mesh: PrimitiveMesh
@@ -509,6 +765,10 @@ func _add_mesh(parent: Node3D, mesh_type: String, position: Vector3, color: Colo
 			var prism := PrismMesh.new()
 			prism.size = size
 			mesh = prism
+		"BoxMesh":
+			var box := BoxMesh.new()
+			box.size = size
+			mesh = box
 		_:
 			var sphere := SphereMesh.new()
 			sphere.radius = size.x
@@ -804,20 +1064,20 @@ func _choose_attack() -> String:
 		return "bolt"
 	if boss:
 		if _special_cooldown <= 0.0:
-			if variant == "barrow_king" or variant == "ember_tyrant":
+			if variant == "barrow_king" or variant == "ember_tyrant" or variant == "ashen_sovereign":
 				return "nova" if distance <= 5.5 else "volley"
 			return "slam" if distance <= 4.2 else "volley"
 		return "sweep"
 	if variant == "barrow_wight" or variant == "frost_wraith" or variant == "grave_knight":
 		return "sweep"
-	if variant == "ash_revenant":
+	if variant == "ash_revenant" or variant == "cinder_colossus":
 		return "slam" if distance <= 4.2 else "volley"
 	if _is_wolf() and _special_cooldown <= 0.0 and distance > attack_range * 1.05:
 		return "pounce"
 	return "claw"
 
 func _is_wolf() -> bool:
-	return variant == "briar_wolf" or variant == "ember_hound"
+	return variant == "briar_wolf" or variant == "ember_hound" or variant == "obsidian_stalker"
 
 ## How close the hero must be before this monster starts a swing. Specials
 ## reach further than the basic strike so the boss can open from range.
@@ -1558,6 +1818,10 @@ func _spawn_burst() -> void:
 		color = Color(1.0, 0.55, 0.25, 1.0)
 	elif variant == "barrow_wight" or variant == "barrow_king":
 		color = Color(0.6, 0.85, 1.0, 1.0)
+	elif variant == "obsidian_stalker" or variant == "cinder_colossus" or variant == "ashen_sovereign":
+		color = Color(1.0, 0.44, 0.14, 1.0)
+	elif variant == "hollow_acolyte":
+		color = Color(0.78, 0.56, 1.0, 1.0)
 	for i in 9:
 		var mote := MeshInstance3D.new()
 		var mesh := SphereMesh.new()
